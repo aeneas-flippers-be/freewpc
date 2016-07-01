@@ -264,10 +264,6 @@ void db_init (void)
 		pinio_debug_write (0);
 		puts_handler = puts_debug;
 	}
-	else
-	{
-		puts_handler = puts_parallel;
-	}
 #elif defined(CONFIG_SIM)
 	puts_handler = puts_sim;
 #else

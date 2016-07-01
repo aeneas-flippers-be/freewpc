@@ -52,8 +52,6 @@ const struct area_csum coin_csum_info = {
 	.reset = coin_reset,
 };
 
-extern __common__ void buyin_coin_insert (void);
-
 
 
 /** Update the start button lamp.  It will flash when a new game
@@ -197,9 +195,6 @@ static void do_coin (U8 slot)
 
 	add_units (price_config.coin_units[slot]);
 	audit_increment (&system_audits.coins_added[slot]);
-#ifdef CONFIG_BUYIN
-	buyin_coin_insert ();
-#endif
 }
 
 /* TODO - use more robust drivers for the coin switches to

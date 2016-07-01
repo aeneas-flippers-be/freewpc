@@ -83,6 +83,8 @@ __noreturn__ void freewpc_init (void)
 	periodic_ok = 0;
 	sys_init_pending_tasks = 0;
 
+	pinio_write_solenoid_set(5, 0);
+
 	/* Initialize all of the other kernel subsystems,
 	 * starting with the hardware-centric ones and moving on
 	 * to software features. */
@@ -200,6 +202,10 @@ __noreturn__ void freewpc_init (void)
 	/* The system can run itself now, this task is done! */
 	task_exit ();
 }
+
+
+
+
 
 
 U8 get_elapsed_time (U16 then)

@@ -1,23 +1,3 @@
-/*
- * Copyright 2006-2011 by Brian Dominy <brian@oddchange.com>
- *
- * This file is part of FreeWPC.
- *
- * FreeWPC is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * FreeWPC is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with FreeWPC; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
- */
-
 #include <freewpc.h>
 
 /**
@@ -62,6 +42,11 @@ U8 initials_selection;
 char initials_data[NUM_INITIALS_ALLOWED+1];
 
 
+
+
+
+
+
 /**
  * The display effect for the enter initials screen.
  *
@@ -70,27 +55,22 @@ char initials_data[NUM_INITIALS_ALLOWED+1];
  */
 void enter_initials_deff (void)
 {
-	while (in_test || task_find_gid (GID_ENTER_INITIALS))
-	{
-		if (score_update_required ())
-		{
+	while (in_test || task_find_gid (GID_ENTER_INITIALS)) {
+		if (in_test || score_update_required () ) {
 #if (MACHINE_DMD == 1)
 			U8 n;
 			dmd_alloc_low_clean ();
 			font_render_string_left (&font_var5, 0, 1, "ENTER INITIALS");
-			for (n=0; n < 3; n++)
-			{
-				font_render_glyph (&font_bitmap8, n * 8, 9,
-					initials_data[n] ? initials_data[n] : '_');
-			}
 
-			if (initials_selection < MAX_INITIAL_INITIAL+1)
-			{
+			//display initials that are entered
+			for (n=0; n < 3; n++)  font_render_glyph (&font_bitmap8, n * 8, 14, initials_data[n] ? initials_data[n] : '_');
+
+			//display alphabet below
+			if (initials_selection < MAX_INITIAL_INITIAL+1) {
 				sprintf ("%12s", initial_chars + initials_selection);
 				font_render_string_left (&font_bitmap8, 0, 23, sprintf_buffer);
 			}
-			else
-			{
+			else {
 				U8 x;
 
 				x = ALPHABET_LEN - initials_selection;
@@ -103,13 +83,15 @@ void enter_initials_deff (void)
 				font_render_string_left (&font_bitmap8, x * FONT_WIDTH, 23, sprintf_buffer);
 			}
 
-			for (n = 22; n <= 30; n++)
-			{
+			for (n = 22; n <= 30; n++) {
 				dmd_low_buffer[16UL * n + SELECT_OFFSET - 1] ^= 0x80;
 				dmd_low_buffer[16UL * n + SELECT_OFFSET] ^= 0x7F;
 			}
 
 			dmd_show_low ();
+
+
+
 #elif (MACHINE_ALPHANUMERIC == 1)
 			seg_alloc_clean ();
 			seg_write_string (0, 0, "ENTER INITIALS");
@@ -125,12 +107,22 @@ void enter_initials_deff (void)
 	deff_exit ();
 }
 
+
+
+
+
+
 void initials_stop (void)
 {
 	task_sleep_sec (1);
 	task_kill_gid (GID_ENTER_INITIALS);
 	initials_enter_timer = 0;
 }
+
+
+
+
+
 
 
 static void initials_running (void)
@@ -150,11 +142,21 @@ static void initials_running (void)
 }
 
 
+
+
+
+
+
 void initials_enter (void)
 {
 	task_create_gid1 (GID_ENTER_INITIALS, initials_running);
 	deff_start_sync (DEFF_ENTER_INITIALS);
 }
+
+
+
+
+
 
 
 CALLSET_ENTRY (initials, init)
@@ -163,29 +165,49 @@ CALLSET_ENTRY (initials, init)
 }
 
 
-CALLSET_ENTRY (initials, sw_left_button)
+
+/*
+ * this code changed to allow scrolling
+ *
+ * also added slight pause so that letters do not jump in pinmame
+ *
+ */
+CALLSET_ENTRY (initials, sw_left_button, sw_upper_left_button)
 {
-	if (initials_enter_timer)
-	{
-		--initials_selection;
-		initials_selection %= ALPHABET_LEN;
-		score_update_request ();
-	}
-}
+	if (initials_enter_timer) {
+		//handle case where button is held in
+		while (	switch_poll_logical (SW_LEFT_BUTTON) || switch_poll_logical (SW_U_L_FLIPPER_BUTTON) ) {
+			--initials_selection;
+			initials_selection %= ALPHABET_LEN;
+			task_sleep (TIME_300MS);// PAUSE needed in case button held down - especially in pinmame
+			score_update_request ();
+		}// end of while loop
+	}//end of if
+}//end of function
 
 
-CALLSET_ENTRY (initials, sw_right_button)
+
+
+
+
+CALLSET_ENTRY (initials, sw_right_button, sw_upper_right_button)
 {
-	if (initials_enter_timer)
-	{
-		++initials_selection;
-		initials_selection %= ALPHABET_LEN;
-		score_update_request ();
-	}
-}
+	if (initials_enter_timer) {
+			//handle case where button is held in
+			while (	switch_poll_logical (SW_RIGHT_BUTTON) || switch_poll_logical (SW_U_R_FLIPPER_BUTTON) ) {
+				++initials_selection;
+				initials_selection %= ALPHABET_LEN;
+				task_sleep (TIME_300MS);// PAUSE needed in case button held down - especially in pinmame
+				score_update_request ();
+			}// end of while loop
+		}//end of if
+}//end of function
 
 
-CALLSET_ENTRY (initials, start_button_handler)
+
+
+
+CALLSET_ENTRY (initials, start_button_handler, sw_left_handle_button, sw_launch_button)
 {
 	if (initials_enter_timer && initials_index < NUM_INITIALS_ALLOWED)
 	{

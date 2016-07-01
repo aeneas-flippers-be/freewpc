@@ -38,13 +38,14 @@ void shoot_alert_task (void)
 	task_sleep_sec (15);
 	for (;;)
 	{
-		if (switch_poll (MACHINE_SHOOTER_SWITCH))
+		if (	switch_poll (MACHINE_SHOOTER_SWITCH)		//if ball is on plunger
+			&& 	!in_test											//have both of these since
+			&&	!global_flag_test(GLOBAL_FLAG_COIN_DOOR_OPENED) ) 	//coin door switch may be jumpered
 		{
 			deff_start (DEFF_PLUNGE_BALL);
-			task_sleep_sec (20);
+						task_sleep_sec (7);
 		}
-		else
-			task_sleep_sec (5);
+		else			task_sleep_sec (7);			//if no ball on plunger, sleep and check again in 7 seconds
 	}
 #endif /* MACHINE_SHOOTER_SWITCH */
 	task_exit ();

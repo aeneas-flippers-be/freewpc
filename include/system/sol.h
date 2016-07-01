@@ -64,6 +64,7 @@ void sol_request_async (U8 sol);
 void sol_request (U8 sol);
 void sol_start_real (solnum_t sol, U8 cycle_mask, U8 ticks);
 void sol_stop (solnum_t sol);
+void sol_reset (void);
 void sol_init (void);
 
 /* sol_start is a wrapper function, because the 'time' value must be scaled

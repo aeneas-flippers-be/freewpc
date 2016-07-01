@@ -25,6 +25,7 @@ extern U8 extra_balls;
 extern U8 extra_balls_earned_this_bip;
 
 __effect__ void increment_extra_balls (void);
+__effect__ void increment_extra_balls_bitf (void);
 __effect__ bool decrement_extra_balls (void);
 __effect__ void clear_extra_balls (void);
 

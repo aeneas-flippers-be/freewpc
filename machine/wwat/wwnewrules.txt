@@ -1,0 +1,298 @@
+Whitewater new rules
+--------------------
+
+PF layout:
+shots:								lamps:
+5 blue river targets 				5 blue river
+2 white bigfoot						2 bigfoot
+3 red kickback targets				3 red tgts
+2 green targets - lite - lock		2 green + 3 lock
+extraball target					1 orange
+orange hazards						7 hazards orange
+	boulder garden					5 white multiplier
+	spine chiller					5 red boulder modes
+	no way out						red multimillion
+	disaster drop					upf jackpot 
+	boomerang bend					upf bigfoot
+	insanity falls					8 yellow rafts + wet willy
+	bigfoot bluff
+Lost Mine
+
+---------------------------------------------------------------------------
+
+goal: advance rafts to reach wet willie; find bigfoot
+	do more with bigfoot than in original rules : wake up bigfoot, have him look at you
+idea:	have more modes for every raft, be able to complete modes, if not then complete when you replay them
+
+
+	1/ advance rafts => reach wet willy => multiball
+IDEA	each raft starts a mode ? : upf left ramp yellow lit, hit ramp to start mode. 
+IDEA 	start mode when you only made lit hazard shots (similar idea to mapmode - follow the lit path)
+IDEA	after reaching wet willy restart and be able to complete unfinished modes (completed play again and count as completed)
+
+
+
+
+
+*************
+implemented:
+*************
+
+Here's Bigfoot, new game rules for Whitewater.
+
+Why whitewater ? Not because the original rules are bad, but just because I wanted to play around with freewpc and Whitewater is the only wpc-89 game I own..
+
+Here is the first release of my rom. It's definitely not completed and I'm not sure if it'll ever reach a point where you can call it completed..
+At the moment it's playable with most things in that I wanted to be in.
+
+About the new rules. I like the original rules in Whitewater so I wanted to keep the spirit of that game. I didn't want to go all crazy and completely change the feel of how it plays. I did want to expand the rules and add some more strategy and make more use of the whole playfield. Also change it from advancing rafts into a 'search bigfoot adventure'. This is not completely finished yet. Still thinking of ways to make it more deep or have things interact with eachother.
+
+Now I make this rom public so others can test and play it too. Depending on the feedback I may or may not continue 'polishing' it.
+At the moment only install it if you're interested in the project and want to test it. It's still a work in progress. Please keep this in mind when you give feedback.
+
+
+You can play this in visual pinball without any problem.
+You can burn it on a rom and install it in the real machine, but this is AT YOUR OWN RISK !
+I've tested it in my own machine and it works. Do not change the power settings in the solenoid tests or mess with other development options ! And my code does not compensate for broken switches, so before testing this new version, make sure all switches in your machine work correct.
+
+
+What's in: 
+- new game rules, see below for details. Not totally completed and things can always change if something is not fun to play..
+- Basic use of lamps and flashers, sounds and dmd.
+- Some bugs. Sometimes the game may crash and reset :( I think most of these crashes are resolved though.. they can pop up again when I move things around in the code, especially when dealing with display effects..
+
+What's not in (yet): 
+- topper lamps
+- backbox flashers
+- dmd graphics. The original graphics are copyrighted. Currently there are text placeholders and basic things. I may add more graphics later.
+
+
+What can you do to help ?
+- play and test it, let me know what you like and don't like in the rules (and how you would improve it)
+- scoring is maybe inbalanced, suggestions to make it more balanced
+- help with sounds. at the moment I use less than half of the available sounds in the rom. Problem is I'm bad at this..
+In the sound test you can play every available sound. If you are good in recognising sounds (where they're used in the original game) and want to help with this mapping, then let me kow.
+
+Known bugs/issues
+- topper lamps not implemented
+- backbox flashers not implemented yet
+- sometimes delay at end of ball up to 10 seconds
+- bigfoot head doesn't work yet like it should
+
+- sometimes crash at end of quickmb mode
+
+
+
+New rules
+=========
+Bigfoot will not divert the pinball into whirlpool unless wpool is lit for a mode
+Hitting 2 bigfoot targets lights bigfoot cave
+	shoot cave within 8 seconds for 250k bonus
+Bigfoot cave when lit awards 250k + item : flashlight, key, camera, map at 5, cow at 20
+	todo? when camera collected - spot bigfoot in different locations
+
+mapmode: started in whirlpool after map is collected in cave
+	map is shown on display, with bigfoot hiding in a random location
+	make 5 shots, 3 hazards on lower pf decide path to follow (left, middle, right), try to reach the X in 5 shots
+	todo: play and test - remove middle shot and start with 2 instead of 3 ?
+
+combos: ramp to rapids and then no way out or disaster drop for 3, or pass to right flipper and repeat ramp to rapids for 4combo
+	repeating boomerang bend shot
+	repeating disasterdrop shot 3x awards hazard or 1M
+	todo? more combos
+
+jet bumper hits increase riverclass (count resets at start of ball)
+jet area border switches change to next wpool mode
+riverclass = bonus multiplier and score of bumpers
+
+no way out locks balls - hit green targets first (increases with nr of mb played), lock 3 balls for multiball
+multiball: 3 ball mb, hit upper main ramp for jackpot, hit at beginning for double/triple jackpot, hit bigfoot targets to light bigfoot for jackpot
+
+lostmine: starts goldrush when key is awarded from cave and minimum 2 lostmine entries, then restarts every 3 lostmine entries
+goldrush: 2ball mb frenzy, everything 25K, shoot moving lit lamp for 1M
+
+multimillion: left ramp shot, let ball go into right inlane and repeat
+
+red targets: any red tgt hit will light next unlit tgt
+	hitting red target advances wpool mode
+	complete 3 to relight kickback, when kb already lit then score 250k
+
+skillshot: upper ramps score 1mil, or let go to right inlane and shoot no way out to start quickmb
+	todo? more with skillshot ? award for 3x same ? wpool mode starts immediately ?
+quick mb: 2 ball mb, every hazard scores 10K first, shoot all hazards for score multiplier, until 100K per shot max
+
+rafts: increase rafts by shooting lit hazards, until wetwilly is reached
+	shooting only lit hazards (except nowayout) scores a perfect path (double raft score) 
+	secret passage counts as perfect shot
+	make 2 perfect rafts to light dam mode
+	river hurryup started when raft increased
+
+river hurryup: 10 seconds, shoot lit river targets, one letter dims every 2 sec
+
+dam mode: start at wpool, hit 5 river targets in time to break dam, 3 sec ballsaver at start
+
+wetwilly: starts as timed mode: for each raft (8 shots) shoot random lit hazard in time, when all done then every hz lit for jackpot
+	* 20 seconds at start 5 seconds added per shot made
+
+lit inlanes add a river letter
+river targets: complete letters to light wpool
+
+shoot lit whirlpool to start whirlpool mode:
+-wpool challenge: 2 ball mb, shoot wpool for jackpot increasing from 1 until 10 mill
+	hit bigft tgts to score a double jp
+
+-5xfun: 30 seconds score*5, can be stacked
+	todo - remove this so strategy of playing changes ? make a mode that you need to make one shot 5x or complete 5 shots ?
+-man overboard: shoot hazard in time. when flashlight found then hz is lit, else everything is dark but audio cues (left/right) and only lower pf hz
+-mystery: starts waterfall mode  TODO add other random modes/points
+-extra ball
+
+
+wizard mode: complete wet willy, class 6, finish wpool, play mapmode, lock 3 balls => wizardmode (TODO new name and not vacation !)
+starts with 8 levels to do:
+	1- wake up bigfoot : shoot 2 white tgts
+	2- visit cave
+	3- 2x disdrop
+	4- 20 bumper hits
+	5- complete red tgts
+	6- 2 spine chillers in time (=mmil)
+	7- spine chill to wpool
+	8- 2x no way out to rapids
+once finished:
+	3 ball mb, (everything scores 20K, hazards 1M TODO)
+
+Bonus:
+	todo: add more scores
+
+
+
+TEST STATUS
+===========
+TEST deffs and leffs !
+
+TODO skillshot: increase ramp score, increase wpool points
+
+TODO see goldrush score if that works add total to other modes too
+
+TODO hurryup timer when river increased
+
+	
+
+bivar3
+	test
+amode
+	ok
+bigfootcave
+	test head turn
+	test timer 8 sec
+bigfootdiv
+	test head turn
+bigfoothead
+	test
+bigfoottgt
+	test timer
+bonus
+	test gold dug
+combos
+	TODO more combos ?
+	TEST repeat boomerang bend 250K and deff
+	TEST repeat disdrop - raft adv at 3, 1M at every other 3
+dammode
+	test
+deffs3
+	test
+extraball
+	test collect EB ?
+goldrush
+	TEST lamplist apply delay
+	TEST LEFF faster 
+
+	TEST step too fast ? after few seconds everything is lit, 
+	TEST ball release mech - waitplunge loop added
+	TEST deff at end of mode with score
+jets
+	ok
+kickback
+	ok
+lanes
+	ok
+leffs
+	todo more leffs
+lock
+	test
+	TEST quickmb start
+	TEST wizard start
+	TEST deff delay
+lostmine
+	ok
+mapmode
+	TEST
+	test bfhead turn
+	test mapmode running deff map
+	test mapmode nowayout is random
+mball
+	TEST
+	TEST restart as 2ball mb when no jackpots scored
+	TEST 2ball restart with restart like quickmb
+	TEST restart deff
+	TEST lamps of rafts and blinking lock are still on
+	TEST JP lamp on
+multimill
+	ok
+quickmb
+	TEST unlocking balls now with waitplunge
+	TEST add start deff wait a moment before starting mode
+rafts
+	TEST
+	TEST lamp rafts switchcase
+	test perfect rafts added
+	test rafthurry
+rafthurry
+	test
+redtgt
+	TEST move to next bouldermode
+	TEST red lamps don't unlight immediately after awarding something
+riverclass
+	ok
+rivertgt
+	ok
+simpleshots
+	ok
+skill
+	TEST bfhead turn
+	TODO think of another wpool skill award - light wpoolmode but don't award immediately ?
+waterfall
+	test
+wetwilly
+	TEST
+	TEST serveball when drain - probably wont work ? then make it a free extra ball
+	TEST leff
+	TODO music was incorrect ?
+	TODO better end of wetwilly
+wp5xpf
+	TEST not started ? 
+	TEST deff ?
+	TEST music similar to goldrush ?
+wpmanoverb
+	test bfhead turn
+	TEST running deff
+	TEST bg music
+wpoolmodes
+	TEST start all 6 modes
+	TEST award correct selected
+	TEST start
+	TODO mystery random now always waterfall mode
+wpwpchall
+	test
+	TEST leff change for 2/3/5 jps scored
+	TODO wpool restart / one jp when it's no jp collected
+wizard
+	TEST
+	TEST start of mode
+	TEST SOUNDS
+	TODO FINISH LEFFS SHOTS AND SOUNDS
+	TODO other name for wizard mode not vacation jp or wiz
+	TODO add music in levels like wetwilly
+	TODO add 8 levels to wizard mode
+
+

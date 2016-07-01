@@ -24,6 +24,7 @@
  */
 
 #include <freewpc.h>
+#include <ballsave.h>
 
 /* The default ball save time is 7 seconds.  Machines can override this. */
 #ifndef MACHINE_BALL_SAVE_TIME
@@ -61,14 +62,25 @@ void ball_save_leff (void)
 
 
 /**
- * Start/extend the ballsaver.
+ * Start / extend a ballsaver
+ * but limit the total time that we can have ballsave to something reasonable
  */
-void ballsave_add_time (U8 secs)
-{
-	if (in_tilt)
-		return;
-	timed_mode_add (&ball_save_mode, secs);
-}
+void ballsave_add_time (U8 secs) {
+	if (in_tilt) return;
+
+	if (timed_mode_running_p (&ball_save_mode) ) {
+			U8 current_time;
+			current_time = timed_mode_get_timer(&ball_save_mode);
+			if (current_time + secs > 15) 	timed_mode_reset (&ball_save_mode, 15);
+			else 							timed_mode_reset (&ball_save_mode, current_time + secs);
+	}
+	//its not already running so start it fresh
+	else {
+			if (secs > 15) secs = 15;
+			timed_mode_begin (&ball_save_mode); 		//starts mode with default time
+			timed_mode_reset (&ball_save_mode, secs); 	//reset time to the time we want
+	}
+}//end of function
 
 
 /**
@@ -83,17 +95,26 @@ void ballsave_disable (void)
 /**
  * Return true if the ballsaver is active.
  */
-bool ballsave_test_active (void)
-{
+bool ballsave_test_active (void) {
 	return timed_mode_running_p (&ball_save_mode);
 }
 
 
 /**
+ * Return the ballsave timer.
+ */
+U8 ballsave_get_timer (void) {
+	return timed_mode_get_timer(&ball_save_mode);
+}
+
+
+
+
+
+/**
  * Return a ball back into play due to ballsave.
  */
-static void ballsave_launch (void)
-{
+static void ballsave_launch (void) {
 	serve_ball_auto ();
 	deff_start (DEFF_BALL_SAVE);
 }
@@ -103,7 +124,6 @@ static void ballsave_launch (void)
  * On any drain switch, extend the ball save timer so that
  * ball save doesn't timeout before endball is called.
  */
-
 CALLSET_ENTRY (ballsave, sw_left_outlane, sw_right_outlane, sw_outhole)
 {
 	if (single_ball_play () && ballsave_test_active ())
@@ -151,24 +171,13 @@ CALLSET_ENTRY (ballsave, single_ball_play)
  * Ball save is activated at ball drain if it is active, or in timed
  * game when there are no balls in play.
  */
-CALLSET_BOOL_ENTRY (ballsave, ball_drain)
-{
-	if (config_timed_game && !in_tilt && (timed_game_timer > 0) && (live_balls == 0))
-	{
-		ballsave_launch ();
-		callset_invoke (timed_drain_penalty);
-		return FALSE;
-	}
-	else if (timer_test_and_kill_gid (GID_BALLSAVE_EXTENDED)
-		|| ballsave_test_active ())
-	{
+/* TODO - handle early ball save due to an outlane drain */
+CALLSET_BOOL_ENTRY (ballsave, ball_drain) {
+	if (timed_mode_running_p (&ball_save_mode) || timer_test_and_kill_gid (GID_BALLSAVE_EXTENDED)) {
 		ballsave_launch ();
 		return FALSE;
 	}
-	else
-	{
-		return TRUE;
-	}
+	else return TRUE;
 }
 
 
@@ -189,5 +198,5 @@ CALLSET_ENTRY (ballsave, lamp_update)
 #endif
 }
 
-/* TODO - handle early ball save due to an outlane drain */
+
 

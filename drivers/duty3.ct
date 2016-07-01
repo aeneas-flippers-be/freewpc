@@ -59,6 +59,17 @@ extern __fastram__ time_unit_t @self_on_time;
 extern __fastram__ time_unit_t @self_cycle;
 extern U8 @self_timeout;
 
+/* User APIs */
+#if (@fixed_cycle_size == 0)
+void @self_config (U8 size, U8 on_time);
+#else
+void @self_config (U8 on_time);
+#endif
+void @self_start (void);
+void @self_stop (void);
+
+
+
 /* RTT(name=@self_service freq=@granularity) */
 extern inline void @self_service (void)
 {

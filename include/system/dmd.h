@@ -148,13 +148,16 @@ extern dmd_transition_t
 	trans_scroll_down,
 	trans_scroll_down_fast,
 	trans_scroll_left,
+	trans_scroll_left_fast,
 	trans_scroll_right,
+	trans_scroll_right_fast,
 	trans_sequential_boxfade,
 	trans_random_boxfade,
 	trans_vstripe_left2right,
 	trans_vstripe_right2left,
 	trans_bitfade_slow,
 	trans_bitfade_fast,
+	trans_bitfade_fastest,
 	trans_unroll_vertical
 	;
 
@@ -227,6 +230,9 @@ void dmd_reset_transition (void);
 void frame_draw (U16 id);
 void frame_draw2 (U16 id);
 void frame_draw_plane (U16 id);
+
+void frame_draw_plane_test (U16 id);
+
 void bmp_draw (U8 x, U8 y, U16 id);
 
 __transition__ void dmd_text_outline (void);
@@ -240,6 +246,7 @@ __transition__ void dmd_dup_mapped (void);
 __effect__ void dmd_draw_border (U8 *dbuf);
 __effect__ void dmd_draw_thin_border (U8 *dbuf);
 __effect__ void dmd_draw_horiz_line (U16 *dbuf, U8 y);
+__effect__ void dmd_draw_vert_line (U8 *dbuf, U8 x);
 
 void dmd_and_page (void);
 void dmd_or_page (void);

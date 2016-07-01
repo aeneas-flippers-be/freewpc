@@ -48,6 +48,10 @@
 @@parameter schedule_ms
 
 
+
+
+
+
 @@
 @@file @self.sched
 @@
@@ -55,6 +59,16 @@
 # note, the template is hard coded to use a frequency value of 8, the value below must match
 # See @SELF_DIVERTER_SCHED
 !@self_service @schedule_ms 40c
+
+
+
+
+
+
+
+
+
+
 
 @@
 @@file @self.h
@@ -104,7 +118,8 @@ extern inline void @self_service (void)
 		diverter_sol_disable(@power_sol, out);
 		diverter_sol_disable(@hold_sol, out);
 #else
-		sol_disable (@power_sol | @hold_sol);
+		sol_disable (@power_sol);
+		sol_disable (@hold_sol);
 #endif
 	} 
 	
@@ -114,15 +129,19 @@ extern inline void @self_service (void)
 		diverter_sol_enable(@power_sol, out);
 		diverter_sol_enable(@hold_sol, out);
 #else
-		sol_enable (@power_sol | @hold_sol);
+		sol_enable (@power_sol);
+		sol_enable (@hold_sol);
 #endif
 		
 		if (--@self_timer == 0)
 		{
 			@self_timer = -1;
 			/* The high power pulse has expired.  Switch to hold power */			
-			//sol_disable (@power_sol);
+#if (@SELF_MODE > 0)
 			diverter_sol_disable(@power_sol, out);			
+#else
+			sol_disable (@power_sol);
+#endif
 		}
 	}
 	
@@ -131,7 +150,7 @@ extern inline void @self_service (void)
 #if (@SELF_MODE > 0)
 		diverter_sol_enable(@hold_sol, out);
 #else
-		//sol_enable (@hold_sol);
+		sol_enable (@hold_sol);
 #endif
 		// We could add a timeout here so that we don't stay on hold power forever but that 
 		// is better left to the game logic, e.g. via timed modes, switches etc.
@@ -146,6 +165,17 @@ extern inline void @self_service (void)
 	fliptronic_powered_coil_outputs = out;
 #endif	
 }
+
+
+
+
+
+
+
+
+
+
+
 
 @@
 @@file @self.c
@@ -163,6 +193,10 @@ extern inline void @self_service (void)
  */
 __fastram__ S8 @self_timer;
 
+
+
+
+
 /**
  * The user API to start a diverter.
  */
@@ -175,6 +209,11 @@ void @self_start (void) {
 	enable_interrupts ();
 }
 
+
+
+
+
+
 /**
  * The user API to stop a diverter.
  */
@@ -186,8 +225,12 @@ void @self_stop (void) {
 	enable_interrupts ();
 }
 
-CALLSET_ENTRY (@self, init)
-{
+
+
+
+
+
+CALLSET_ENTRY (@self, init) {
 	@self_timer = 0;
 	dbprintf("Diverter power: '@power_sol' (%d)\n", @power_sol);
 	dbprintf("Diverter hold: '@hold_sol' (%d)\n", @hold_sol);
@@ -198,12 +241,23 @@ CALLSET_ENTRY (@self, init)
 #endif	
 }
 
-CALLSET_ENTRY (@self, tilt, stop_game)
-{
+
+
+
+
+CALLSET_ENTRY (@self, tilt, stop_game) {
 	@self_stop ();
 }
 
 /* vim: set filetype=c: */
+
+
+
+
+
+
+
+
 
 
 @@
@@ -232,8 +286,6 @@ CALLSET_ENTRY (@self, tilt, stop_game)
 
 /* @self test:
  * - Enable/Disable solenoids.
- * - Calibrate the left right and center positions.
- * - Shake engine.
  */
 
 #include <freewpc.h>
@@ -241,8 +293,6 @@ CALLSET_ENTRY (@self, tilt, stop_game)
 #include <test.h>
 #include "@self.h"
 
-// FIXME - font_render_string_right vertically offsets the text by 1 pixel (downwards)
-// When this is removed removed all references to FR_WORKAROUND
 #define FRSR_WORKAROUND 1
 
 enum {
@@ -263,39 +313,32 @@ extern __fastram__ S8 @self_timer;
 extern __fastram__ U8 fliptronic_powered_coil_outputs;
 #endif
 
-void @self_test_init (void)
-{
-	@self_test_command = START;
-}
 
-void @self_draw_test_title(void) {
-	font_render_string_center (&font_mono5, 64, 2, "DIVERTER TEST");
-	dmd_draw_horiz_line ((U16 *)dmd_low_buffer, 5);
-}
+
+
+
+
+
+
 
 #define LINE_1_Y 7
 #define LINE_2_Y 13
 #define LINE_3_Y 19
 
-void @self_test_draw (void)
-{
+void @self_test_draw (void) {
 	dmd_alloc_low_clean ();
 
-	@self_draw_test_title();
+	font_render_string_center (&font_var5, 64, 2, "@SELF TEST");
+	dmd_draw_horiz_line ((U16 *)dmd_low_buffer, 5);
 
 	// 21 characters wide max when using 5 point font.
+//	if 			(@self_timer < 0)  	sprintf ("HOLD");
+//	 else if 	(@self_timer > 0) 	sprintf ("FULL");
+//	else 							sprintf ("FLOAT");
+//	font_render_string_center (&font_var5, 64, LINE_1_Y + 2, sprintf_buffer);
 
-	if (@self_timer < 0) {
-		sprintf ("HOLD");
-	} else if (@self_timer > 0) {
-		sprintf ("FULL");
-	} else {
-		sprintf ("FLOAT");
-	}
-	font_render_string_center (&font_var5, 64, LINE_1_Y + 2, sprintf_buffer);
-
-	sprintf ("TIMER:%d\n", @self_timer);
-	font_render_string_center (&font_var5, 64, LINE_2_Y + 2, sprintf_buffer);
+//	sprintf ("TIMER:%d\n", @self_timer);
+//	font_render_string_center (&font_var5, 64, LINE_2_Y + 2, sprintf_buffer);
 
 	// XXX for debugging
 #if (@SELF_MODE > 0)		
@@ -306,65 +349,85 @@ void @self_test_draw (void)
 	dmd_draw_horiz_line ((U16 *)dmd_low_buffer, 25);
 
 	sprintf(@self_test_short_names[@self_test_command]);
-	font_render_string_left (&font_mono5, 0, 27, sprintf_buffer);
-
-
-
+	font_render_string_left (&font_var5, 0, 27, sprintf_buffer);
 	dmd_show_low ();
 }
 
 
-void @self_test_thread (void)
-{
-	for (;;)
-	{
 
-		task_sleep (TIME_100MS);
 
+void @self_test_init (void) {
+	@self_test_command = START;
+	@self_test_draw ();
+	
+}
+
+
+
+
+void @self_test_thread (void) {
+	for (;;) {
+		task_sleep (TIME_1S);	//this was 500ms but was causing cycle issues
 		@self_test_draw ();
 	}
 }
 
 
-void @self_test_up (void)
-{
+
+
+
+void @self_test_up (void) {
 	if (@self_test_command < LAST_TEST)
 		@self_test_command++;
+		@self_test_draw ();
+		
 }
 
 
-void @self_test_down (void)
-{
+
+
+void @self_test_down (void) {
 	if (@self_test_command > FIRST_TEST)
 		@self_test_command--;
+		@self_test_draw ();
+		
 }
 
-void @self_test_escape (void) {
 
+
+
+void @self_test_escape (void) {
 	// stop everything
 	@self_stop();
-
 	window_pop();
 }
 
-void @self_test_enter (void)
-{
+
+
+
+
+void @self_test_enter (void) {
 	sound_send (SND_TEST_ENTER);
-  	switch (@self_test_command)
-  	{
+  	switch (@self_test_command) {
   		case START:
 			dbprintf ("@self_test_enter: starting 'open'\n");
 			@self_start();
 			@self_test_command = STOP;
+ 			@self_test_draw ();
   		break;
+
   		case STOP:
 			dbprintf ("@self_test_enter: starting 'close'\n");
 			@self_stop();
 			@self_test_command = START;
+  			@self_test_draw ();
   		break;
   	}
-
 }
+
+
+
+
 
 struct window_ops @self_test_window = {
 	DEFAULT_WINDOW,
@@ -376,6 +439,10 @@ struct window_ops @self_test_window = {
 	.escape = @self_test_escape,
 	.thread = @self_test_thread,
 };
+
+
+
+
 
 
 struct menu @self_test_item = {

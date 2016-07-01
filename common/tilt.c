@@ -18,6 +18,8 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+/*  AE mix james and brian */
+
 /**
  * \file
  * \brief Common tilt functions
@@ -34,6 +36,7 @@
 
 /** The number of tilt warnings that have been issued on this ball. */
 U8 tilt_warnings;
+bool in_tilt_warning;
 
 /* A timer that allows tilt to settle during endball before
    proceeding to the next ball. */
@@ -56,6 +59,15 @@ void tilt_warning_leff (void)
 }
 
 
+void tilt_warning_task (void) {
+	task_sleep (TIME_2S);
+	in_tilt_warning = FALSE;
+	task_exit ();
+}
+
+
+
+
 CALLSET_ENTRY (tilt, sw_tilt)
 {
 	extern U8 in_tilt;
@@ -63,39 +75,63 @@ CALLSET_ENTRY (tilt, sw_tilt)
 	/* Ignore tilt switch activity while already in tilt state.
 	 * But restart the timer that tells us that the tilt is still
 	 * moving, so we can delay endball. */
-	if (in_tilt)
+	if (in_tilt || in_tilt_warning)
 	{
 		free_timer_restart (tilt_ignore_timer, TIME_2S);
 		return;
 	}
 
-	/* IDEA : Disable tilt while a ball search is in progress? */
-
-	else if (++tilt_warnings == system_config.tilt_warnings)
+	else if (++tilt_warnings >= system_config.tilt_warnings)
 	{
 		/* Warnings exceeded... tilt the current ball */
+		in_tilt = TRUE;
+		in_tilt_warning = FALSE;
 		sound_reset ();
 #ifdef CONFIG_GI
 		gi_disable (PINIO_GI_STRINGS);
 #endif
+		deff_stop_all ();
+		leff_stop_all ();
+
+#ifdef DEFF_TILT
 		deff_start (DEFF_TILT);
+#endif
+#ifdef LEFF_TILT
 		leff_start (LEFF_TILT);
+#endif
+
 		free_timer_restart (tilt_ignore_timer, TIME_2S);
 		in_tilt = TRUE;
-		set_valid_playfield ();
+		set_valid_playfield (); // this handles the special case where the game was tilted with ball on shooter lane before it is fired (see below)
 		flipper_disable ();
 		callset_invoke (tilt);
 		task_remove_duration (TASK_DURATION_LIVE);
 		task_duration_expire (TASK_DURATION_LIVE);
 		audit_increment (&system_audits.tilts);
 		audit_increment (&system_audits.plumb_bob_tilts);
+
+	//at this point ball should drain and game/end_ball should take over and tilt condition will be reset below
+
+	//unless already in bonus
+		if (in_bonus) 	callset_invoke (bonus_complete); // if tilted, player gets no bonus
+
+	//unless ball stuck on shooter so handle that case
+		if (switch_poll_logical (MACHINE_SHOOTER_SWITCH) ) launch_ball();
+
 	}
 	else
 	{
-		/* Give a warning this time */
+		// Give a warning this time
+		in_tilt_warning = TRUE;
+
+#ifdef DEFF_TILT_WARNING
 		deff_start (DEFF_TILT_WARNING);
+#endif
+#ifdef LEFF_TILT_WARNING
 		leff_start (LEFF_TILT_WARNING);
+#endif
 		callset_invoke (tilt_warning);
+		task_create_gid1 (GID_TILT_WARNING, tilt_warning_task); //make a few second pause
 	}
 }
 
@@ -164,6 +200,7 @@ CALLSET_ENTRY (tilt, bonus_complete)
 		leff_stop (LEFF_TILT);
 #endif
 		in_tilt = FALSE;
+		in_tilt_warning = FALSE;
 	}
 }
 
@@ -171,5 +208,6 @@ CALLSET_ENTRY (tilt, bonus_complete)
 CALLSET_ENTRY (tilt, start_ball)
 {
 	tilt_warnings = 0;
+	in_tilt_warning = FALSE;
 }
 

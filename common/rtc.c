@@ -1,23 +1,3 @@
-/*
- * Copyright 2006-2011 by Brian Dominy <brian@oddchange.com>
- *
- * This file is part of FreeWPC.
- *
- * FreeWPC is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * FreeWPC is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with FreeWPC; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
- */
-
 #include <freewpc.h>
 #include <diag.h>
 
@@ -243,11 +223,11 @@ void rtc_reset (void)
 	/* Reset the date to the time at which the software
 	 * was built.
 	 * TODO : this should trigger a CLOCK NOT SET message */
-	current_date.year = 0;
+	current_date.year = 14;
 	current_date.month = 1;
 	current_date.day = 1;
-	current_date.hour = 0;
-	current_date.minute = 0;
+	current_date.hour = 1;
+	current_date.minute = 1;
 	last_minute = 0;
 }
 
@@ -326,8 +306,10 @@ const char *rtc_edit_field_name[] = {
 #endif
 };
 
-#ifdef CONFIG_DMD_OR_ALPHA
 
+
+
+#ifdef CONFIG_DMD_OR_ALPHA
 void rtc_render (struct date *d)
 {
 #if (MACHINE_DMD == 1)
@@ -352,6 +334,8 @@ void rtc_render (struct date *d)
 }
 
 
+
+
 /** Show the current date/time on the DMD */
 void rtc_show_date_time (struct date *d)
 {
@@ -363,11 +347,18 @@ void rtc_show_date_time (struct date *d)
 #endif
 
 
+
+
+
+
 void rtc_begin_modify (void)
 {
 	memcpy (&edit_date, &current_date, sizeof (struct date));
 	rtc_edit_field = 0;
 }
+
+
+
 
 void rtc_end_modify (U8 cancel_flag)
 {
@@ -376,11 +367,15 @@ void rtc_end_modify (U8 cancel_flag)
 	{
 		pinio_nvram_unlock ();
 		current_date = edit_date;
-		pinio_nvram_lock ();
 		rtc_hw_write ();
-		timestamp_update (&system_timestamps.clock_last_set);
+		csum_area_update (&rtc_csum_info);
+		pinio_nvram_lock ();
 	}
 }
+
+
+
+
 
 void rtc_next_field (void)
 {
@@ -390,48 +385,52 @@ void rtc_next_field (void)
 }
 
 
-void rtc_modify_field (U8 up_flag)
-{
+
+
+
+void rtc_modify_field (U8 up_flag) {
 	struct date *d = &edit_date;
-	switch (rtc_edit_field)
-	{
+
+	switch (rtc_edit_field) {
 		case RTC_FIELD_MONTH:
-			if (up_flag)
-				d->month++;
-			else if (d->month > 1)
-				d->month--;
+			if 		(up_flag && d->month < 12) 	d->month++;
+			else if (up_flag ) 					d->month = 1;
+			else if (!up_flag && d->month > 1) 	d->month--;
+			else if (!up_flag ) 				d->month = 12;
 			break;
 		case RTC_FIELD_DAY:
-			if (up_flag)
-				d->day++;
-			else if (d->day > 1)
-				d->day--;
+			//GOING UP
+			if 		(up_flag && d->day < rtc_days_in_current_month (d) )	d->day++;
+			else if (up_flag  )					d->day = 1; //ROLL TO 1ST DAY
+			//GOING DOWN
+			else if (!up_flag && d->day > 1)	d->day--;
+			else if (!up_flag )					d->day = rtc_days_in_current_month (d); //ROLL TO LAST DAY
 			break;
 		case RTC_FIELD_YEAR:
-			if (up_flag && d->year < 99)
-				d->year++;
-			else if (d->year > 8)
-				d->year--;
+			if (up_flag )						d->year++;
+			else if (!up_flag )					d->year--;
 			break;
+
 		case RTC_FIELD_HOUR:
-			if (up_flag && d->hour < 23)
-				d->hour++;
-			else if (d->hour > 0)
-				d->hour--;
-			rtc_hw_write ();
+			if 		(up_flag && d->hour < 24)	d->hour++;
+			else if (up_flag )					d->hour = 0;
+			else if (!up_flag && d->hour > 0)	d->hour--;
+			else if (!up_flag )					d->hour = 23;
 			break;
 		case RTC_FIELD_MINUTE:
-			if (up_flag && d->minute < 59)
-				d->minute++;
-			else if (d->minute > 0)
-				d->minute--;
-			rtc_hw_write ();
+			if (up_flag && d->minute < 59)		d->minute++;
+			else if (up_flag )					d->minute = 0;
+			else if (!up_flag && d->minute > 0)	d->minute--;
+			else if (!up_flag )					d->minute = 59;
 			break;
 		default:
 			break;
 	}
 	rtc_normalize (d);
 }
+
+
+
 
 
 CALLSET_ENTRY (rtc, file_register)

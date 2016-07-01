@@ -18,6 +18,8 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+/* AE */
+
 #include <freewpc.h>
 #include <search.h>
 
@@ -82,7 +84,7 @@ void timer_unlock (void)
  * entire function will be executed; thus, it is mostly useless to
  * try to optimize this by moving things around.  The best way to
  * optimize this is to reduce the total number of checks by
- * usign timer locks.
+ * using timer locks.
  */
 bool system_timer_pause (void)
 {
@@ -97,8 +99,10 @@ bool system_timer_pause (void)
 	if (global_flag_test (GLOBAL_FLAG_BALL_AT_PLUNGER) && single_ball_play ())
 		return TRUE;
 
+#ifndef	COIN_DOOR_OPENED_TIMERS_OFF
 	if (global_flag_test (GLOBAL_FLAG_COIN_DOOR_OPENED))
 		return TRUE;
+#endif
 
 	if (config_timed_game)
 	{

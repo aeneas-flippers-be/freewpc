@@ -240,6 +240,7 @@ extern device_t device_table[];
 extern U8 counted_balls;
 extern U8 missing_balls;
 extern U8 live_balls;
+extern U8 balls_in_trough;
 extern U8 held_balls;
 extern U8 kickout_locks;
 
@@ -248,6 +249,7 @@ __common__ void device_register (devicenum_t devno, device_properties_t *props);
 __common__ U8 device_recount (device_t *dev);
 __common__ void device_update_globals (void);
 __common__ void device_probe (void);
+__common__ void device_zero_out_kick_request (device_t *dev);
 __common__ void device_request_kick (device_t *dev);
 __common__ void device_request_empty (device_t *dev);
 __common__ void device_sw_handler (U8 devno);

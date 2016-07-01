@@ -18,6 +18,10 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+/* 
+new by Aeneas mix of James and Brian
+ */
+
 #include <freewpc.h>
 #include <highscore.h>
 #include <knocker.h>
@@ -103,7 +107,8 @@ static U8 default_high_score_initials[NUM_HIGH_SCORES][HIGH_SCORE_NAMESZ] = {
 };
 
 
-extern char initials_data[];
+//extern char initials_data[];
+extern U8 initials_data[];
 
 #ifdef CONFIG_DMD_OR_ALPHA
 
@@ -132,7 +137,7 @@ void grand_champion_draw (void)
 	dmd_alloc_low_clean ();
 	font_render_string_center (&font_fixed6, 64, 8, "HIGHEST SCORE AT");
 	sprintf_score (high_score_table[0].score);
-	font_render_string_center (&font_fixed10, 64, 22, sprintf_buffer);
+	font_render_string_center (&font_term6, 64, 22, sprintf_buffer);
 	dmd_show_low ();
 }
 
@@ -174,11 +179,13 @@ void high_score_draw_34 (void)
 
 void high_score_check_reset (void)
 {
-	/* Initialize the counters that will force a reset
-	 * automatically after some time */
-	/* TODO - what if adjustment is OFF ? */
+	//Initialize the counters that will force a reset automatically after some time
+	// TODO - what if adjustment is OFF ?
+	pinio_nvram_unlock ();
 	hs_reset_counter1 = hstd_config.hs_reset_every;
 	hs_reset_counter2 = 250;
+	csum_area_update (&high_csum_info);
+	pinio_nvram_lock ();
 }
 
 
@@ -189,6 +196,8 @@ void high_score_reset (void)
 	U8 place;
 
 	dbprintf ("Resetting high score table\n");
+
+	pinio_nvram_unlock ();
 
 	/* Reset the grand champion */
 	memcpy (high_score_table[0].score, default_gc_score, HIGH_SCORE_WIDTH);
@@ -204,6 +213,7 @@ void high_score_reset (void)
 	}
 
 	csum_area_update (&high_csum_info);
+	pinio_nvram_lock ();
 
 	/* Reset when the next auto-reset will occur */
 	high_score_check_reset ();
@@ -229,7 +239,7 @@ void hsentry_deff (void)
 	font_render_string_center (&font_var5, 64, 3, sprintf_buffer);
 	dmd_sched_transition (&trans_vstripe_left2right);
 	dmd_show_low ();
-	task_sleep_sec (3);
+	task_sleep_sec (2);
 #endif
 	deff_exit ();
 }
@@ -237,22 +247,28 @@ void hsentry_deff (void)
 
 void hscredits_deff (void)
 {
-	U8 credits;
+//	U8 credits;
+	struct high_score *hsp = &high_score_table[high_score_position];
 
 	dmd_alloc_low_clean ();
 
 	if (high_score_position == 0)
 	{
 		sprintf ("GRAND CHAMPION");
-		credits = hstd_config.champion_credits;
+//		credits = hstd_config.champion_credits;
 	}
 	else
 	{
 		sprintf ("HIGH SCORE %d", high_score_position);
-		credits = hstd_config.hstd_credits[high_score_position-1];
+//		credits = hstd_config.hstd_credits[high_score_position-1];
 	}
 	font_render_string_center (&font_fixed6, 64, 9, sprintf_buffer);
 
+
+	sprintf ("%c%c%c", hsp->initials[0], hsp->initials[1], hsp->initials[2]);
+	font_render_string_center (&font_fixed6, 64, 22, sprintf_buffer);
+
+/*
 	if (credits > 0)
 	{
 		if (credits > 1)
@@ -261,15 +277,15 @@ void hscredits_deff (void)
 			sprintf ("AWARD %d CREDIT", credits);
 		font_render_string_center (&font_fixed6, 64, 22, sprintf_buffer);
 	}
-
+*/
 	dmd_show_low ();
 	task_sleep_sec (2);
 	deff_exit ();
 }
 #endif
 
-/** Check if the high scores need to be reset automatically.
- * Called during game start. */
+
+// Check if the high scores need to be reset automatically.  Called during game start.
 void high_score_reset_check (void)
 {
 	dbprintf ("High score reset check: %02X %02X\n",
@@ -287,12 +303,13 @@ void high_score_reset_check (void)
 		hs_reset_counter2 = 250;
 		if (--hs_reset_counter1 == 0)
 		{
+			pinio_nvram_unlock ();
 			hs_reset_counter1 = hstd_config.hs_reset_every;
 			csum_area_reset (&high_csum_info);
+			pinio_nvram_lock ();
 		}
 	}
 }
-
 
 /**
  * Free a high score entry.
@@ -349,8 +366,6 @@ void high_score_award_credits (U8 *adjptr)
 	{
 		audit_increment (&system_audits.hstd_credits);
 		add_credit ();
-		knocker_fire ();
-		task_sleep_sec (1);
 		count--;
 	}
 }
@@ -371,36 +386,43 @@ void high_score_enter_initials (U8 position)
 		/* Blank the high score initials until determined */
 		pinio_nvram_unlock ();
 		memset (hsp->initials, ' ', HIGH_SCORE_NAMESZ);
-		pinio_nvram_lock ();
 		csum_area_update (&high_csum_info);
+		pinio_nvram_lock ();
 
-		/* Read the player's initials */
+		// Read the player's initials
 		high_score_position = position;
-		deff_start_sync (DEFF_HSENTRY);
+		deff_start_sync (DEFF_HSENTRY);  //this is above - pre-displays for a few seconds
 #ifdef LEFF_HIGH_SCORE
 		leff_start (LEFF_HIGH_SCORE);
 #endif
-		SECTION_VOIDCALL (__common__, initials_enter);
+		SECTION_VOIDCALL (__common__, initials_enter); //this goes to initials.c
 
-		/* Save the initials to table entry */
+		// Save the initials to table entry
 		pinio_nvram_unlock ();
 		memcpy (hsp->initials, initials_data, HIGH_SCORE_NAMESZ);
 		csum_area_update (&high_csum_info);
 		pinio_nvram_lock ();
 
-		/* Award credits */
-		deff_start (DEFF_HSCREDITS);
-		if (position == 0)
-		{
-			high_score_award_credits (&hstd_config.champion_credits);
-		}
-		else
-		{
-			high_score_award_credits (&hstd_config.hstd_credits[position-1]);
-		}
-		task_sleep (TIME_1500MS);
-	}
-}
+		deff_start (DEFF_HSCREDITS);	//show what position obtained for a bit
+
+		//knocker fire - HAPPENS REGARDLESS IF CREDITS ARE SET
+			U8 count;
+			count = 0;
+			if (position == 0 || position == 1) count = 3; //GC or 1st fire 3 times
+			else if (position == 2) 			count = 2; //2nd place fire 2 times
+			else if (position == 3) 			count = 1; //3rd place fire 1 times
+			while (count > 0) {
+				knocker_fire ();
+				task_sleep (TIME_1500MS);
+				count--;
+		}//end of not disabled
+
+		// Award credits if set
+		if (position == 0) 	high_score_award_credits (&hstd_config.champion_credits);
+		else 				high_score_award_credits (&hstd_config.hstd_credits[position-1]);
+		task_sleep (TIME_100MS);
+	}//end of if
+}//end of function
 
 
 

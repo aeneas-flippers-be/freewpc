@@ -41,10 +41,10 @@ static const char *month_names[] = {
 
 
 const char *locale_names[] = {
-	"ERROR", "FRANCE", "GERMANY", "FRANCE 20F",
+	"USA/CANADA 1", "FRANCE", "GERMANY", "FRANCE 20F",
 	"INVALID", "INVALID", "INVALID", "GERMANY 2",
 	"INVALID", "FRANCE 3", "EXPORT", "FRANCE 4",
-	"UNITED KINGDOM", "EUROPE", "SPAIN", "USA/CANADA",
+	"UNITED KINGDOM", "EUROPE", "SPAIN", "USA/CANADA 2",
 };
 
 /* TODO - option to render in short form for audit display */
@@ -67,7 +67,17 @@ void locale_render_date (U8 month, U8 day, U16 year)
 
 void render_build_date (void)
 {
-	locale_render_date (BUILD_MONTH, BUILD_DAY, BUILD_YEAR);
+	switch (system_config.date_style)
+	{
+		case DATE_STYLE_US:
+		default:
+			sprintf ("BUILD %s %d %ld", month_names[BUILD_MONTH-1], BUILD_DAY, BUILD_YEAR);
+			break;
+
+		case DATE_STYLE_EURO:
+			sprintf ("BUILD %d %s %ld", BUILD_DAY, month_names[BUILD_MONTH-1], BUILD_YEAR);
+			break;
+	}
 }
 
 

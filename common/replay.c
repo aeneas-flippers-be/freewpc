@@ -163,11 +163,18 @@ struct replay_code_info replay_boost_code_info = {
 	.step10 = U16_TO_BCD2(REPLAY_BOOST_STEP) << 4,
 };
 
+
+
+
+
 void replay_code_to_boost (score_t score, U8 code)
 {
 	default_replay_code_convert (score, code, &replay_boost_code_info);
 }
 #endif
+
+
+
 
 
 #ifdef CONFIG_DMD_OR_ALPHA
@@ -187,6 +194,9 @@ void replay_draw (void)
 		case FREE_AWARD_TICKET:
 			header = "TICKET AT";
 			break;
+		case FREE_AWARD_POINTS:
+			header = "POINTS AT";
+			break;
 		case FREE_AWARD_OFF:
 		default:
 			return;
@@ -201,6 +211,9 @@ void replay_draw (void)
 #endif
 
 
+
+
+
 /** Award a single replay to the player up */
 void replay_award (void)
 {
@@ -209,47 +222,85 @@ void replay_award (void)
 	{
 		case FREE_AWARD_CREDIT:
 			add_credit ();
+			#ifdef DEFF_REPLAY
+				deff_start (DEFF_REPLAY);
+			#endif
+			#ifdef LEFF_REPLAY
+				leff_start (LEFF_REPLAY);
+			#endif
 			break;
 
 		case FREE_AWARD_EB:
 			increment_extra_balls ();
+			callset_invoke (award_extra_ball_effect);
+			break;
+
+		case FREE_AWARD_POINTS:
+//			score (SC_10M);
 			break;
 
 		case FREE_AWARD_OFF:
 			break;
 	}
-#ifdef DEFF_REPLAY
-	deff_start (DEFF_REPLAY);
-#endif
-#ifdef LEFF_REPLAY
-	leff_start (LEFF_REPLAY);
-#endif
 
 	audit_increment (&system_audits.replays);
-	timestamp_update (&system_timestamps.last_replay);
+//	timestamp_update (&system_timestamps.last_replay);
 	replay_total_this_player++;
 	knocker_fire ();
+
 }
+
+
+
 
 
 /** Check if the current score has exceeded the next replay level,
  * and a replay needs to be awarded */
-void replay_check_current (void)
-{
-	replay_score_t *curr;
+void replay_check_current (void) {
 
-	if (unlikely (system_config.replay_award == FREE_AWARD_OFF))
-		return;
+	if (unlikely (system_config.replay_award == FREE_AWARD_OFF)) 	return;
+	if (unlikely (replay_total_this_player >= 1)) 					return;
+	if (unlikely (replay_total_this_player >= NUM_REPLAY_LEVELS))	return;
 
-	if (unlikely (replay_total_this_player >= NUM_REPLAY_LEVELS))
-		return;
+// Compares two scores.  Returns -1, 0, or 1 accordingly, like memcmp.
+	if (score_compare (current_score, next_replay_score) >= 0)  {
+				callset_invoke (replay);
+				switch (system_config.replay_award) {
+					case FREE_AWARD_CREDIT:
+						add_credit ();
+						#ifdef DEFF_REPLAY
+							deff_start (DEFF_REPLAY);
+						#endif
+						#ifdef LEFF_REPLAY
+							leff_start (LEFF_REPLAY);
+						#endif
+						break;
 
-	curr = (replay_score_t *)(current_score + REPLAY_SCORE_OFFSET);
-	if (score_compare (curr, next_replay_score) >= 0)
-	{
-		replay_award ();
-	}
-}
+					case FREE_AWARD_EB:
+						increment_extra_balls ();
+						callset_invoke (award_extra_ball_effect);
+						break;
+
+					case FREE_AWARD_POINTS:
+						//when we call score routine in /kernal/score - it will call replay_check_current and result in a crash
+						//then instead we must add in the point manually here
+						score_add (current_score, score_table[SC_10M]);
+						score_update_request ();
+						break;
+
+					case FREE_AWARD_OFF:
+						break;
+				}//end of switch
+
+				audit_increment (&system_audits.replays);
+//				timestamp_update (&system_timestamps.last_replay);
+				replay_total_this_player++;
+				knocker_fire ();
+	}//end of if
+}//end
+
+
+
 
 
 /** Returns true if it is possible to give out a replay award.
@@ -261,27 +312,33 @@ bool replay_can_be_awarded (void)
 }
 
 
+
+
+
+
+
 /* Initialize the replay_info structure.
  * This struct is populated with data from the adjustment system,
  * which is already being checksummed to detect corruption.  This
  * function does not attempt to duplicate that, but instead converts
  * the adjustment data into more usable form.
  */
-void replay_info_update (void)
-{
+void replay_info_update (void) {
 	U8 replay_code;
 	U8 level;
 	U8 multiplier;
 
 	/* Repeat for each of the possible replay levels. */
-	for (level = 0; level < NUM_REPLAY_LEVELS; level++)
-	{
-		/* Get the correct adjustment code and multiplier.
-		 * This depends on the replay system in effect (auto or fixed). */
-		if (system_config.replay_system == REPLAY_AUTO)
-		{
-			if (level >= system_config.replay_levels)
-			{
+	for (level = 0; level < NUM_REPLAY_LEVELS; level++) {
+		// Get the correct adjustment code and multiplier.
+		// This depends on the replay system in effect (auto or fixed).
+		/*
+		 * replay auto and replay boost are
+		 * not currently implemented so I have them disabled here
+		 * and in test/adjust.c
+		 *
+		if (system_config.replay_system == REPLAY_AUTO) {
+			if (level >= system_config.replay_levels) {
 				rp_debug ("rp #%d skip\n", level);
 				continue;
 			}
@@ -290,11 +347,11 @@ void replay_info_update (void)
 		}
 		else
 		{
+		*/
+		//fixed replay
 			replay_code = system_config.replay_level[level];
-			if (replay_code == 0)
-				continue;
+			if (replay_code == 0) continue;
 			multiplier = 1;
-		}
 
 		/* Convert and store in BCD form */
 		rp_debug ("rp #%d code=%d mult=%d \n", level, replay_code, multiplier);
@@ -310,38 +367,68 @@ void replay_info_update (void)
 		dbprintf1 ();
 		dbprintf ("\n");
 #endif
-	}
-}
+	}//end of loop
+}//end of function
+
+
+
+
+
 
 void replay_boost_reset (void)
 {
 	/* Copy base levels into score array */
 }
 
+
+
+
+
+
 void replay_boost_now (void)
 {
 	/* Increment each score array entry by the boost value */
 }
+
+
+
+
 
 void replay_info_reset (void)
 {
 	replay_boost_reset ();
 }
 
+
+
+
+
 CALLSET_ENTRY (replay, start_game)
 {
 	replay_total_this_game = 0;
 }
+
+
+
+
 
 CALLSET_ENTRY (replay, start_player)
 {
 	replay_total_this_player = 0;
 }
 
+
+
+
+
 CALLSET_ENTRY (replay, end_player)
 {
 	replay_total_this_game += replay_total_this_player;
 }
+
+
+
+
 
 CALLSET_ENTRY (replay, end_game)
 {
@@ -360,10 +447,18 @@ CALLSET_ENTRY (replay, end_game)
 	}
 }
 
+
+
+
+
 CALLSET_ENTRY (replay, init)
 {
 	replay_info_update ();
 }
+
+
+
+
 
 CALLSET_ENTRY (replay, test_start, add_credits, add_partial_credits)
 {
@@ -371,10 +466,20 @@ CALLSET_ENTRY (replay, test_start, add_credits, add_partial_credits)
 }
 
 
+
+
+
+
+
 CALLSET_ENTRY (replay, file_register)
 {
 	file_register (&replay_csum_info);
 }
+
+
+
+
+
 
 
 CALLSET_ENTRY (replay, adjustment_changed)

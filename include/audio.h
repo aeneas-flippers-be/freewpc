@@ -36,11 +36,14 @@
 #define SP_NORMAL  PRI_NULL
 
 #define SL_100MS   1
+#define SL_200MS   2
 #define SL_500MS   5
 #define SL_1S      10
 #define SL_2S      20
 #define SL_3S      30
 #define SL_4S      40
+#define SL_5S      50
+#define SL_6S      60
 
 typedef struct
 {

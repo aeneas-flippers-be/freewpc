@@ -240,9 +240,6 @@ wait_and_recount:
 	 */
 	task_sleep (dev->props->settle_delay);
 
-start_update:
-	task_sleep (TIME_50MS);
-
 	/* The device is probably stable now.  Poll all of the
 	 * switches and recount */
 	device_recount (dev);
@@ -285,8 +282,7 @@ start_update:
 			 * Treat this as an enter event (or multiple events, if the
 			 * count goes up by more than 1). */
 			U8 enter_count = dev->actual_count - dev->previous_count;
-			if (!trough_dev_p (dev))
-				set_valid_playfield ();
+			set_valid_playfield ();
 			while (enter_count > 0)
 			{
 				callset_invoke (any_device_enter);
@@ -401,14 +397,14 @@ start_update:
 		{
 			/* Container ready to kick, but 1 or more
 			 * locks are held so we must wait. */
-			goto start_update;
+			goto wait_and_recount;
 		}
 		else if (!device_call_boolean_op (dev, kick_request))
 		{
 			/* Inform other modules that a kick was requested.
 			These handlers can return FALSE to delay (but not
 			cancel) the kick. */
-			goto start_update;
+			goto wait_and_recount;
 		}
 			/* TODO - if multiple devices want to kick at the same time,
 			 * they should be staggered a bit.  Another case should be
@@ -449,7 +445,7 @@ start_update:
 	be a race condition where a switch closure gets missed. */
 	device_recount (dev);
 	if (dev->actual_count != dev->previous_count)
-		goto start_update;
+		goto wait_and_recount;
 
 	task_exit ();
 }
