@@ -37,12 +37,12 @@ switch:
 void kickback_enable (void)
 {
 	kickback_driver_enable();
+	flag_on (FLAG_KICKBACKLIT);
 	lamp_tristate_on (LM_KICKBACK); 
 	task_sleep (TIME_100MS);
 	lamp_tristate_off (LM_KICKBACK); 
 	task_sleep (TIME_100MS);
 	lamp_tristate_on (LM_KICKBACK); 
-	flag_on (FLAG_KICKBACKLIT);
 }
 
 void kickback_disable (void)
@@ -65,7 +65,8 @@ CALLSET_ENTRY (kickback, sw_kickback)
 	{
 		speech_start (SND_FEMALE_YEAH6, SL_2S);
 		task_recreate_gid (GID_KICKBACK_FINISH, kickback_finish);
-		deff_start (DEFF_KICKBACK);
+		if (global_flag_test (GLOBAL_FLAG_RAFTMODE))
+			deff_start (DEFF_KICKBACK);
 	}
 	else
 	{
@@ -74,19 +75,15 @@ CALLSET_ENTRY (kickback, sw_kickback)
 	}
 }
 
-CALLSET_ENTRY (kickback, lamp_update)
-{
-	if (flag_test (FLAG_KICKBACKLIT))
-		lamp_tristate_on (LM_KICKBACK); 
-}
 
-CALLSET_ENTRY (kickback, start_player)
-{
-	kickback_enable ();
-}
+//-ALLSET_ENTRY (kickback, start_player)
+//{
+//	kickback_enable ();
+//}
 
 CALLSET_ENTRY (kickback, start_ball)
 {
+	flag_on (FLAG_KICKBACKLIT);
 	if (flag_test (FLAG_KICKBACKLIT))
 	{
 		kickback_enable ();

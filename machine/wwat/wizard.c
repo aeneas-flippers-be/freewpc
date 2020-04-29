@@ -143,7 +143,8 @@ void wizard_stop (void)
 	leff_stop (LEFF_RAFTLOOP);
 	leff_stop (LEFF_TGTTOGGLE);
 
-	lamp_tristate_off (LM_HZ_NO_WAY_OUT);
+	raft_hz_lamps_tri_off ();
+
 	lamp_tristate_off (LM_LIGHT_SPINE);
 	lamp_tristate_off (LM_UPF_MULTI_JP);
 	lamp_tristate_off (LM_UPF_BIGFOOT_JP);
@@ -153,19 +154,16 @@ void wizard_stop (void)
 	flag_off (FLAG_WPOOLFINISHED);
 	flag_off (FLAG_GOLDPLAYED);
 	flag_off (FLAG_WETFINISHED);
-	flag_off (FLAG_MAPPLAYED);
-	global_flag_on (GLOBAL_FLAG_RAFTMODE);
+	raftmode_on ();
 }
 
 void wizard_start (void)
 {
-	global_flag_off (GLOBAL_FLAG_RAFTMODE);
+	raftmode_off ();
 
-	lamps_out ();
-
-	deff_start (DEFF_WIZ_START);
 	speech_start (SND_WWATER, SL_3S);
-	task_sleep_sec (1);
+	deff_start_sync (DEFF_WIZ_INTRO);
+//	task_sleep_sec (1);
 
 	wiz_raftgoal_made = FALSE;
 	wiz_raftnr = 1;
@@ -174,6 +172,10 @@ void wizard_start (void)
 	wiz_shot2made = 0;
 	wiz_shot3made = 0;
 
+	lamp_tristate_flash (LM_2BANK_UP);
+	lamp_tristate_flash (LM_2BANK_LOW);
+
+	leff_start (LEFF_FL_WETWILLY);
 
 	global_flag_on (GLOBAL_FLAG_WIZ_RUNNING);
 }
@@ -193,6 +195,13 @@ void wizard_mb_start (void)
 	deff_stop (DEFF_WIZ_RUNNING);
 	global_flag_on (GLOBAL_FLAG_WIZ_MB_RUNNING);
 
+	lamp_tristate_flash (LM_UPF_MULTI_JP);
+	lamp_tristate_flash (LM_2BANK_UP);
+	lamp_tristate_flash (LM_2BANK_LOW);
+	lamp_tristate_flash (LM_UPF_BIGFOOT_JP);
+
+	qmball_flash_hz ();
+
 	task_sleep_sec (1);	
 	lock_unlockball ();
 	task_sleep_sec (1);	
@@ -208,6 +217,7 @@ void wiz_test3red (void)
 	if (wiz_shot1made == 1 && wiz_shot2made == 1 && wiz_shot3made == 1)
 	{
 		wiz_raftgoal_made = TRUE;
+		lamp_tristate_flash (LM_HZ_NO_WAY_OUT);
 		lamp_tristate_off (LM_3BANK_TOP);
 		lamp_tristate_off (LM_3BANK_CENTER);
 		lamp_tristate_off (LM_3BANK_BOTTOM);
@@ -229,57 +239,7 @@ CALLSET_ENTRY (wizard, music_refresh)
 		music_request (MUS_MULTIBALL, PRI_GAME_MODE1 + 5);
 }
 
-CALLSET_ENTRY (wizard, lamp_update)
-{
-	if (global_flag_test (GLOBAL_FLAG_WIZ_MB_RUNNING))
-	{
-		lamp_tristate_flash (LM_UPF_MULTI_JP);
-		lamp_tristate_flash (LM_2BANK_UP);
-		lamp_tristate_flash (LM_2BANK_LOW);
-		lamp_tristate_flash (LM_UPF_BIGFOOT_JP);
 
-		lamp_tristate_flash (LM_HZ_BOULDER_GARDEN);
-		lamp_tristate_flash (LM_HZ_SPINE_CHILLER);
-		lamp_tristate_flash (LM_HZ_NO_WAY_OUT);
-		lamp_tristate_flash (LM_HZ_DISDROP);
-		lamp_tristate_flash (LM_HZ_BOOM_BEND);
-		lamp_tristate_flash (LM_HZ_INSANITY_FALLS);
-		lamp_tristate_flash (LM_HZ_BIGFOOT_BLUFF);
-	}
-
-	if (global_flag_test (GLOBAL_FLAG_WIZ_RUNNING))
-	{
-		if (wiz_raftgoal_made) 
-		{
-			lamp_tristate_flash (LM_HZ_NO_WAY_OUT);
-		}
-		else
-		{
-			switch (wiz_raftnr)
-			{
-				case 1:
-					lamp_tristate_flash (LM_2BANK_UP);
-					lamp_tristate_flash (LM_2BANK_LOW);
-					break;
-				case 3:
-					lamp_tristate_flash (LM_HZ_DISDROP);
-					break;
-				case 5:
-					lamp_tristate_flash (LM_3BANK_TOP);
-					lamp_tristate_flash (LM_3BANK_CENTER);
-					lamp_tristate_flash (LM_3BANK_BOTTOM);
-					break;
-				case 6:
-					lamp_tristate_flash (LM_HZ_SPINE_CHILLER);
-					break;
-				case 8:
-					lamp_tristate_flash (LM_HZ_NO_WAY_OUT);
-					lamp_tristate_flash (LM_LIGHT_SPINE);
-					break;
-			}
-		}
-	}
-}
 
 CALLSET_ENTRY (wizard, sw_3bank_top)
 {
@@ -316,6 +276,7 @@ CALLSET_ENTRY (wizard, sw_2bank_up)
 		wiz_shot1made = 1;
 		if (wiz_shot1made == 1 && wiz_shot2made == 1)
 			wiz_raftgoal_made = TRUE;
+			lamp_tristate_flash (LM_HZ_NO_WAY_OUT);
 			lamp_tristate_off (LM_2BANK_UP);
 			lamp_tristate_off (LM_2BANK_LOW);
 	}
@@ -328,6 +289,7 @@ CALLSET_ENTRY (wizard, sw_2bank_low)
 		wiz_shot2made = 1;
 		if (wiz_shot1made == 1 && wiz_shot2made == 1)
 			wiz_raftgoal_made = TRUE;
+			lamp_tristate_flash (LM_HZ_NO_WAY_OUT);
 			lamp_tristate_off (LM_2BANK_UP);
 			lamp_tristate_off (LM_2BANK_LOW);
 	}
@@ -346,12 +308,14 @@ CALLSET_ENTRY (wizard, left_ramp_made)
 
 	if (global_flag_test (GLOBAL_FLAG_WIZ_RUNNING) && (wiz_raftnr == 6 || wiz_raftnr == 7))
 	{
-		if (free_timer_test (TIM_MULTIMILL) && wiz_raftnr == 6)
+		if (free_timer_test (TIM_SKILL) && wiz_raftnr == 6)
+// reuse skill timer
 		{
 			wiz_raftgoal_made = TRUE;
+			lamp_tristate_flash (LM_HZ_NO_WAY_OUT);
 			lamp_tristate_off (LM_HZ_SPINE_CHILLER);
 		}
-		free_timer_start (TIM_MULTIMILL, TIME_4S);
+		free_timer_start (TIM_SKILL, TIME_4S);
 	}
 }
 
@@ -359,8 +323,8 @@ CALLSET_ENTRY (wizard, left_ramp_made)
 
 
 
-CALLSET_ENTRY (wizard, dev_lock_enter)
-{
+//ALLSET_ENTRY (wizard, dev_lock_enter)
+/*{
 	if (global_flag_test (GLOBAL_FLAG_WIZ_MB_RUNNING))
 		wiz_score_jackpot ();
 
@@ -378,8 +342,28 @@ CALLSET_ENTRY (wizard, dev_lock_enter)
 			wiz_shot3made = 0;
 			lamp_tristate_off (LM_HZ_NO_WAY_OUT);
 			score (SC_10M);
+
+			switch (wiz_raftnr)
+			{
+				case 3:
+					lamp_tristate_flash (LM_HZ_DISDROP);
+					break;
+				case 5:
+					lamp_tristate_flash (LM_3BANK_TOP);
+					lamp_tristate_flash (LM_3BANK_CENTER);
+					lamp_tristate_flash (LM_3BANK_BOTTOM);
+					break;
+				case 6:
+					lamp_tristate_flash (LM_HZ_SPINE_CHILLER);
+					break;
+				case 8:
+					lamp_tristate_flash (LM_HZ_NO_WAY_OUT);
+					lamp_tristate_flash (LM_LIGHT_SPINE);
+					break;
+			}
 			task_sleep_sec (2);
 		}
+
 		if (wiz_raftnr == 2)
 			global_flag_on (GLOBAL_FLAG_BIGFOOTLIT);
 		if (wiz_raftnr == 7)
@@ -394,8 +378,14 @@ CALLSET_ENTRY (wizard, dev_lock_enter)
 			wizard_mb_start ();
 		}
 	}
-
 }
+*/
+
+
+
+
+
+
 
 CALLSET_ENTRY (wizard, sw_disas_drop_main)
 {
@@ -408,6 +398,7 @@ CALLSET_ENTRY (wizard, sw_disas_drop_main)
 		if (wiz_shot1made == 2)
 		{
 			wiz_raftgoal_made = TRUE;
+			lamp_tristate_flash (LM_HZ_NO_WAY_OUT);
 			lamp_tristate_off (LM_HZ_DISDROP);
 		}
 	}
@@ -417,10 +408,11 @@ CALLSET_ENTRY (wizard, sw_whirlpool_exit)
 {
 	if (global_flag_test (GLOBAL_FLAG_WIZ_RUNNING) && wiz_raftnr == 7)
 	{
-		if (free_timer_test (TIM_MULTIMILL))
+		if (free_timer_test (TIM_SKILL))
 		{
 			global_flag_off (GLOBAL_FLAG_WPOOLLIT);
 			wiz_raftgoal_made = TRUE;
+			lamp_tristate_flash (LM_HZ_NO_WAY_OUT);
 		}
 	}
 }
@@ -454,6 +446,7 @@ CALLSET_ENTRY (wizard, sw_bigfoot_cave)
 	if (global_flag_test (GLOBAL_FLAG_WIZ_RUNNING) && wiz_raftnr == 2)
 	{
 		wiz_raftgoal_made = TRUE;
+		lamp_tristate_flash (LM_HZ_NO_WAY_OUT);
 		global_flag_off (GLOBAL_FLAG_BIGFOOTLIT);
 	}
 }
@@ -464,7 +457,10 @@ CALLSET_ENTRY (wizard, sw_jet)
 	{
 		bounded_increment (wiz_shot1made, 20);
 		if (wiz_shot1made == 20)
+		{
 			wiz_raftgoal_made = TRUE;
+			lamp_tristate_flash (LM_HZ_NO_WAY_OUT);
+		}
 	}
 }
 
@@ -484,7 +480,7 @@ CALLSET_ENTRY (wizard, single_ball_play)
 	}
 }
 
-CALLSET_ENTRY (wizard, end_ball)
+CALLSET_ENTRY (wizard, end_ball, tilt)
 {
 	if (global_flag_test (GLOBAL_FLAG_WIZ_MB_RUNNING) || global_flag_test (GLOBAL_FLAG_WIZ_RUNNING))
 	{

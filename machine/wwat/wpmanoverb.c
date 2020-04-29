@@ -19,16 +19,18 @@
  */
 
 /*
-WP mode Man Overboard
-Timed mode - 30 seconds - Countdown timer for score
+WP mode Man Overboard  - started in whirlpool
+Timed mode - 20 seconds - Countdown timer for score
 Shoot 1 random hazard
-
 Change with original game : go dark unless you've found the flashlight
 */
+
 #include <freewpc.h>
 #include <timedmode.h>
 #include <bigfhead.h>
 #include "wpmanoverb.h"
+
+#define WPMANO_MODE_TIME 20
 
 
 U8 wpmano_timer;
@@ -37,24 +39,23 @@ U8 wpmano_randomhz;
 bool wpmano_gothim;
 
 score_t wpmano_score;
-score_t wpmano_scoremin;
+
+
+void wpmano_score_task (void)
+{
+	task_sleep_sec (1);
+	while (score_compare (wpmano_score, score_table[SC_1M]) > 0)
+	{
+		score_sub (wpmano_score, score_table[SC_195110]);
+		task_sleep (TIME_200MS);
+	}
+	score_copy (wpmano_score, score_table[SC_1M]);
+	task_exit ();
+}
 
 
 void wpmano_mode_init (void)
 {
-	score_zero (wpmano_score);
-	score_add (wpmano_score, score_table[SC_20M]);
-	score_zero (wpmano_scoremin);
-	score_add (wpmano_scoremin, score_table[SC_1M]);
-
-	wpmano_gothim = FALSE;
-
-	global_flag_on (GLOBAL_FLAG_WPMANO_RUNNING);
-
-	lamps_out ();
-	lamp_tristate_flash (LM_BD_MAN_OVERBD);
-
-
 	if (flag_test (FLAG_BFCLIGHT))
 	{
 		switch (wpmano_randomhz)
@@ -81,19 +82,26 @@ void wpmano_mode_init (void)
 				lamp_tristate_flash (LM_HZ_BIGFOOT_BLUFF);
 				break;
 		}
-	}
+	} 
+
+//	while (deff_get_active() != DEFF_WPMANO_RUNNING)
+//	{
+//		task_sleep (TIME_100MS);
+//	}
+
+	task_sleep (TIME_200MS);
 	global_flag_off (GLOBAL_FLAG_HOLD_MINE_KICKOUT);
 }
 
 void wpmano_mode_exit (void)
 {
-	global_flag_off (GLOBAL_FLAG_WPMANO_RUNNING);
-	global_flag_off (GLOBAL_FLAG_PF_LAMPS_OFF);
+	task_kill_gid (GID_MANO);
 	lamp_tristate_off (LM_BD_MAN_OVERBD);
-	lamplist_apply (LAMPLIST_HAZARDS, lamp_off);
+	raft_hz_lamps_tri_off ();
+
 	deff_stop (DEFF_WPMANO_RUNNING);
 
-	global_flag_on (GLOBAL_FLAG_RAFTMODE);
+	raftmode_on ();
 
 	if (!wpmano_gothim)
 		speech_start (SND_DANGLOSTANOTHER, SL_4S);
@@ -117,6 +125,7 @@ void wpmano_rendertext (void)
 
 void wpmano_running_deff (void)
 {
+	task_create_gid1 (GID_MANO, wpmano_score_task);
 	for (;;)
 	{
 		dmd_alloc_low_clean ();
@@ -129,15 +138,6 @@ void wpmano_running_deff (void)
 		bitmap_blit (mano2_bits,  1, 5);
 		wpmano_rendertext ();
 		dmd_show_low ();
-
-		if (score_compare (wpmano_score, wpmano_scoremin) < 0)
-		{
-			score_zero (wpmano_score);
-			score_add (wpmano_score, score_table[SC_1M]);
-		}
-		else
-			score_sub (wpmano_score, score_table[SC_20K]);
-
 		task_sleep (TIME_200MS);
 	}
 }
@@ -161,32 +161,33 @@ struct timed_mode_ops wpmano_mode = {
 	.deff_running = DEFF_WPMANO_RUNNING,
 	.gid = GID_MANO_MODE,
 	.prio = PRI_GAME_MODE3,
-	.init_timer = 20,
+	.init_timer = WPMANO_MODE_TIME,
 	.timer = &wpmano_timer,
-	.grace_timer = 1,
+	.grace_timer = 0,
 	.pause = system_timer_pause,
 };
 
 
 void wpmano_shotmade (U8 shot)
 {
-	if (shot == wpmano_randomhz)
+	if (shot == wpmano_randomhz)   //correct shot made
 	{
+		task_kill_gid (GID_MANO);
 		wpmano_gothim = TRUE;
 		timed_mode_end (&wpmano_mode);
 		score_long (wpmano_score);
 		deff_start (DEFF_WPMANO_TOTAL);
 	}
-	else
+	else  //shot not made
 	{
-		if (flag_test (FLAG_BFCLIGHT))
+		if (flag_test (FLAG_BFCLIGHT))  //flashlight found
 		{
 			if (shot < wpmano_randomhz)
 				speech_start (SND_GRABONTOHIM, SL_3S);
 			else
 				speech_start (SND_GETHOLDOFHIM, SL_3S);
 		}
-		else
+		else  //dark mode
 		{
 			if (shot < wpmano_randomhz)
 				speech_start (SND_RIGHTRIGHT, SL_3S);
@@ -200,27 +201,34 @@ void wpmano_shotmade (U8 shot)
 
 void wpman_start (void)
 {
-	global_flag_off (GLOBAL_FLAG_RAFTMODE);
+	raftmode_off ();
 
 	speech_start (SND_MANOVERB, SL_3S);
 
+	score_copy (wpmano_score, score_table[SC_20M]);
+	wpmano_gothim = FALSE;
+
+	lamp_tristate_flash (LM_BD_MAN_OVERBD);
+	
 	if (flag_test (FLAG_BFCLIGHT))
 		wpmano_randomhz = random_scaled(6) +1;
 	else
 		wpmano_randomhz = random_scaled(4) + 1;
 
 	if (wpmano_randomhz < 4)
-		bigfhead_go_ccw_front ();
+		bigfhead_go_front_ccw ();
 	else
-		bigfhead_go_cw_front ();
+		bigfhead_go_front_cw ();
+
+	deff_start_sync (DEFF_WPMANO_INTRO);
 
 	timed_mode_begin (&wpmano_mode);
 }
 
-void wpman_stop (void)
-{
-	timed_mode_end (&wpmano_mode);
-}
+//void wpman_stop (void)
+//{
+//	timed_mode_end (&wpmano_mode);
+//}
 
 
 
@@ -232,13 +240,14 @@ CALLSET_ENTRY (wpmano, left_ramp_made)
 	}
 }
 
-CALLSET_ENTRY (wpmano, dev_lock_enter)
-{
+//ALLSET_ENTRY (wpmano, dev_lock_enter)
+/*{
 	if (timed_mode_running_p (&wpmano_mode))
 	{
 		wpmano_shotmade (3);
 	}
 }
+*/
 
 CALLSET_ENTRY (wpmano, sw_disas_drop_main)
 {
@@ -296,7 +305,7 @@ CALLSET_ENTRY (wpmano, music_refresh)
 	}
 }
 
-CALLSET_ENTRY (wpmano, end_ball)
+CALLSET_ENTRY (wpmano, end_ball, tilt)
 {
 	if (timed_mode_running_p (&wpmano_mode))
 		timed_mode_end (&wpmano_mode);

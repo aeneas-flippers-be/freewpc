@@ -22,7 +22,8 @@
 Riverdam mode
 Timed mode - 60 seconds - Countdown timer for score
 hit all 5 river targets to break dam and score
-IDEA continue as long as time is running, move to next dam ?
+
+lit inlanes dont work in this mode
 */
 
 #include <freewpc.h>
@@ -31,33 +32,27 @@ IDEA continue as long as time is running, move to next dam ?
 #include "dammode.h"
 #include <ballsave.h>
 
+#define DAM_MODE_TIME 60
 
 U8 dam_timer;
 
-//bool dam_gothim;
-
-//score_t dam_score;
-//score_t dam_scoremin;
+extern bool rivtarget1;
+extern bool rivtarget2;
+extern bool rivtarget3;
+extern bool rivtarget4;
+extern bool rivtarget5;
 
 
 void dam_mode_init (void)
 {
-/*	score_zero (dam_score);
-	score_add (dam_score, score_table[SC_20M]);
-	score_zero (dam_scoremin);
-	score_add (dam_scoremin, score_table[SC_1M]);
-	dam_gothim = FALSE;
-*/
-
 	global_flag_on (GLOBAL_FLAG_DAM_RUNNING);
+	river_off ();
 
-	lamps_out ();
-
-	global_flag_off (GLOBAL_FLAG_RIVERR1);
-	global_flag_off (GLOBAL_FLAG_RIVERR2);
-	global_flag_off (GLOBAL_FLAG_RIVERI);
-	global_flag_off (GLOBAL_FLAG_RIVERV);
-	global_flag_off (GLOBAL_FLAG_RIVERE);
+	rivtarget1 = FALSE;
+	rivtarget2 = FALSE;
+	rivtarget3 = FALSE;
+	rivtarget4 = FALSE;
+	rivtarget5 = FALSE;
 
 	lamp_tristate_flash (LM_RIVER_R1);
 	lamp_tristate_flash (LM_RIVER_I);
@@ -66,42 +61,39 @@ void dam_mode_init (void)
 	lamp_tristate_flash (LM_RIVER_R2);
 
 	ballsave_add_time (3);
-//	global_flag_off (GLOBAL_FLAG_HOLD_MINE_KICKOUT);
 }
 
 void dam_mode_exit (void)
 {
-	global_flag_off (GLOBAL_FLAG_DAM_RUNNING);
-	global_flag_off (GLOBAL_FLAG_PF_LAMPS_OFF);
 	deff_stop (DEFF_DAM_RUNNING);
+//	river_off ();
+	lamp_tristate_off (LM_RIVER_R1);
+	lamp_tristate_off (LM_RIVER_I);
+	lamp_tristate_off (LM_RIVER_V);
+	lamp_tristate_off (LM_RIVER_E);
+	lamp_tristate_off (LM_RIVER_R2);
 
-	global_flag_off (GLOBAL_FLAG_RIVERR1);
-	global_flag_off (GLOBAL_FLAG_RIVERR2);
-	global_flag_off (GLOBAL_FLAG_RIVERI);
-	global_flag_off (GLOBAL_FLAG_RIVERV);
-	global_flag_off (GLOBAL_FLAG_RIVERE);
-
-	global_flag_on (GLOBAL_FLAG_RAFTMODE);
-
-//	if (!dam_gothim)
-//		speech_start (SND_DANGLOSTANOTHER, SL_4S);
+//	raftmode_on ();
+	global_flag_off (GLOBAL_FLAG_DAM_RUNNING);
+	river_lamps_on ();
 }
 
 
 void dam_drawdam (void)
 {
-		if (!global_flag_test (GLOBAL_FLAG_RIVERR1))
-			bitmap_blit2 (beaver1_bits,  5, 2);
-		if (!global_flag_test (GLOBAL_FLAG_RIVERI))
-			bitmap_blit2 (beaver1_bits,  35, 2);
-		if (!global_flag_test (GLOBAL_FLAG_RIVERV))
-			bitmap_blit2 (beaver1_bits,  64, 2);
-		if (!global_flag_test (GLOBAL_FLAG_RIVERE))
-			bitmap_blit2 (beaver2_bits,  90, 2);
-		if (!global_flag_test (GLOBAL_FLAG_RIVERR2))
-			bitmap_blit2 (beaver2_bits,  90, 2);
 		sprintf ("%d", dam_timer);
 		font_render_string (&font_var5, 2, 2, sprintf_buffer);
+
+		if (!rivtarget1)
+			bitmap_blit (beaver1_bits,  8, 6);
+		if (!rivtarget2)
+			bitmap_blit (beaver1_bits,  32, 6);
+		if (!rivtarget3)
+			bitmap_blit (beaver1_bits,  56, 6);
+		if (!rivtarget4)
+			bitmap_blit (beaver2_bits,  80, 6);
+		if (!rivtarget5)
+			bitmap_blit (beaver2_bits,  104, 6);
 }
 
 void dam_running_deff (void)
@@ -131,19 +123,18 @@ struct timed_mode_ops dam_mode = {
 //	.deff_running = DEFF_DAM_RUNNING,
 	.gid = GID_MANO_MODE,
 	.prio = PRI_GAME_MODE3,
-	.init_timer = 60,
+	.init_timer = DAM_MODE_TIME,
 	.timer = &dam_timer,
-	.grace_timer = 1,
+	.grace_timer = 0,
 	.pause = system_timer_pause,
 };
 
 void dam_testshot (void)
 {
-	if (global_flag_test (GLOBAL_FLAG_RIVERR1) && global_flag_test (GLOBAL_FLAG_RIVERR2) && global_flag_test (GLOBAL_FLAG_RIVERI)
-		&& global_flag_test (GLOBAL_FLAG_RIVERV) && global_flag_test (GLOBAL_FLAG_RIVERE))
+	if (rivtarget1 && rivtarget2 && rivtarget3 && rivtarget4 && rivtarget5)
 	{
-		//todo 
-		//eff_start (DEFF_DAM_OK);
+		deff_start (DEFF_DAM_OK);
+		score (SC_10M);
 		timed_mode_end (&dam_mode);
 	}
 }
@@ -158,24 +149,24 @@ void dam_shotmade (U8 shot)
 	switch (shot)
 	{
 		case 1:
-			global_flag_on (GLOBAL_FLAG_RIVERR1);
-			lamp_tristate_on (LM_RIVER_R1);
+			rivtarget1 = TRUE;
+			lamp_tristate_off (LM_RIVER_R1);
 			break;
 		case 2:
-			global_flag_on (GLOBAL_FLAG_RIVERI);
-			lamp_tristate_on (LM_RIVER_I);
+			rivtarget2 = TRUE;
+			lamp_tristate_off (LM_RIVER_I);
 			break;
 		case 3:
-			global_flag_on (GLOBAL_FLAG_RIVERV);
-			lamp_tristate_on (LM_RIVER_V);
+			rivtarget3 = TRUE;
+			lamp_tristate_off (LM_RIVER_V);
 			break;
 		case 4:
-			global_flag_on (GLOBAL_FLAG_RIVERE);
-			lamp_tristate_on (LM_RIVER_E);
+			rivtarget4 = TRUE;
+			lamp_tristate_off (LM_RIVER_E);
 			break;
 		case 5:
-			global_flag_on (GLOBAL_FLAG_RIVERR2);
-			lamp_tristate_on (LM_RIVER_R2);
+			rivtarget5 = TRUE;
+			lamp_tristate_off (LM_RIVER_R2);
 			break;
 	}
 	dam_testshot ();
@@ -184,7 +175,7 @@ void dam_shotmade (U8 shot)
 
 void dam_start (void)
 {
-	global_flag_off (GLOBAL_FLAG_RAFTMODE);
+//	raftmode_off ();
 
 //	speech_start (SND_MANOVERB, SL_3S);
 
@@ -195,31 +186,31 @@ void dam_start (void)
 
 CALLSET_ENTRY (dam, sw_river_r1)
 {
-	if (global_flag_test (GLOBAL_FLAG_DAM_RUNNING) && !global_flag_test (GLOBAL_FLAG_RIVERR1))
+	if (timed_mode_running_p (&dam_mode) && !rivtarget1)
 		dam_shotmade (1);
 }
 
 CALLSET_ENTRY (dam, sw_river_i)
 {
-	if (global_flag_test (GLOBAL_FLAG_DAM_RUNNING) && !global_flag_test (GLOBAL_FLAG_RIVERR1))
+	if (timed_mode_running_p (&dam_mode) && !rivtarget2)
 		dam_shotmade (2);
 }
 
 CALLSET_ENTRY (dam, sw_river_v)
 {
-	if (global_flag_test (GLOBAL_FLAG_DAM_RUNNING) && !global_flag_test (GLOBAL_FLAG_RIVERR1))
+	if (timed_mode_running_p (&dam_mode) && !rivtarget3)
 		dam_shotmade (3);
 }
 
 CALLSET_ENTRY (dam, sw_river_e)
 {
-	if (global_flag_test (GLOBAL_FLAG_DAM_RUNNING) && !global_flag_test (GLOBAL_FLAG_RIVERR1))
+	if (timed_mode_running_p (&dam_mode) && !rivtarget4)
 		dam_shotmade (4);
 }
 
 CALLSET_ENTRY (dam, sw_river_r2)
 {
-	if (global_flag_test (GLOBAL_FLAG_DAM_RUNNING) && !global_flag_test (GLOBAL_FLAG_RIVERR1))
+	if (timed_mode_running_p (&dam_mode) && !rivtarget5)
 		dam_shotmade (5);
 }
 
@@ -239,7 +230,7 @@ CALLSET_ENTRY (dam, music_refresh)
 	}
 }
 
-CALLSET_ENTRY (dam, end_ball)
+CALLSET_ENTRY (dam, end_ball, tilt)
 {
 	if (timed_mode_running_p (&dam_mode))
 		timed_mode_end (&dam_mode);

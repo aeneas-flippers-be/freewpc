@@ -22,20 +22,26 @@
 
 extern U8 shots_falls;
 extern U8 shots_secretpass;
+
+extern U8 gold_hitcount;
+
+//extern U8 raft_perfectcount;
+extern U8 raftnr;
+
 extern U8 riverclass;
-extern U8 raft_perfectcount;
 
-extern __machine__ U8 jets_extra_hit;
+extern U8 jets_extra_hit;
 
-extern __machine__ U8 combos_nrdrops;
-extern __machine__ U8 combos_nrrloops;
-extern __machine__ U8 combos_3made;
-extern __machine__ U8 combos_4made;
+extern U8 combos_nrdrops;
+extern U8 combos_nrrloops;
+extern U8 combos_3made;
+extern U8 combos_4made;
 
-extern __machine__ U8 hurry_counter;
+extern U8 hurry_counter;
 
-extern __machine2__ U8 caveshots;
-extern __machine2__ U8 gold_hitcount;
+extern U8 caveshots;
+extern U8 lostmine_nrshot;
+
 
 
 
@@ -99,7 +105,28 @@ void bonus_deff (void)
 
 	task_recreate_gid (GID_BONUS_BUTTON_MONITOR, bonus_button_monitor);
 
-	if (raft_perfectcount > 0)
+	if (raftnr > 0)
+	{
+		dmd_alloc_low_clean ();
+		score_zero (bonus_scored);
+		score_add (bonus_scored, score_table[SC_100K]);
+		score_mul (bonus_scored, raftnr); 
+		score_add (total_bonus, bonus_scored);
+		sprintf_score (bonus_scored);
+		font_render_string_center (&font_fixed10, 64, 16, sprintf_buffer);
+		sprintf ("RAFT NUMBER");
+		font_render_string_center (&font_mono5, 64, 4, sprintf_buffer);
+		sprintf ("%d X 100,000", raftnr);
+		font_render_string_center (&font_mono5, 64, 26, sprintf_buffer);
+		bonus_sched_transition ();
+		dmd_show_low ();
+		sound_start (ST_SAMPLE, SND_BONUSTING1, SL_1S, PRI_GAME_QUICK3);
+		flasher_pulse (FLASH_R_MOUNTAIN_FL);
+		flasher_pulse (FLASH_L_MOUNTAIN_FL);
+		bonus_pause ();
+	}
+
+/*	if (raft_perfectcount > 0)
 	{
 		dmd_alloc_low_clean ();
 		score_zero (bonus_scored);
@@ -110,14 +137,16 @@ void bonus_deff (void)
 		font_render_string_center (&font_fixed10, 64, 16, sprintf_buffer);
 		sprintf ("PERFECT RAFTS");
 		font_render_string_center (&font_mono5, 64, 4, sprintf_buffer);
-		sprintf ("%d X 1,000,000", (raft_perfectcount));
+		sprintf ("%d X 1,000,000", raft_perfectcount);
 		font_render_string_center (&font_mono5, 64, 26, sprintf_buffer);
 		bonus_sched_transition ();
 		dmd_show_low ();
 		sound_start (ST_SAMPLE, SND_BONUSTING1, SL_1S, PRI_GAME_QUICK3);
+		flasher_pulse (FLASH_R_MOUNTAIN_FL);
+		flasher_pulse (FLASH_L_MOUNTAIN_FL);
 		bonus_pause ();
 	}
-
+*/
 
 	if (hurry_counter > 0)
 	{
@@ -130,11 +159,13 @@ void bonus_deff (void)
 		font_render_string_center (&font_fixed10, 64, 16, sprintf_buffer);
 		sprintf ("HURRY UP RIVER");
 		font_render_string_center (&font_mono5, 64, 4, sprintf_buffer);
-		sprintf ("%d X 100,000", (shots_secretpass));
+		sprintf ("%d X 100,000", hurry_counter);
 		font_render_string_center (&font_mono5, 64, 26, sprintf_buffer);
 		bonus_sched_transition ();
 		dmd_show_low ();
 		sound_start (ST_SAMPLE, SND_BONUSTING1, SL_1S, PRI_GAME_QUICK3);
+		flasher_pulse (FLASH_R_MOUNTAIN_FL);
+		flasher_pulse (FLASH_L_MOUNTAIN_FL);
 		bonus_pause ();
 	}
 
@@ -150,11 +181,13 @@ void bonus_deff (void)
 		font_render_string_center (&font_fixed10, 64, 16, sprintf_buffer);
 		sprintf ("SECRET PASSAGE");
 		font_render_string_center (&font_mono5, 64, 4, sprintf_buffer);
-		sprintf ("%d X 250,000", (shots_secretpass));
+		sprintf ("%d X 250,000", shots_secretpass);
 		font_render_string_center (&font_mono5, 64, 26, sprintf_buffer);
 		bonus_sched_transition ();
 		dmd_show_low ();
 		sound_start (ST_SAMPLE, SND_BONUSTING1, SL_1S, PRI_GAME_QUICK3);
+		flasher_pulse (FLASH_R_MOUNTAIN_FL);
+		flasher_pulse (FLASH_L_MOUNTAIN_FL);
 		bonus_pause ();
 	}
 
@@ -169,11 +202,13 @@ void bonus_deff (void)
 		font_render_string_center (&font_fixed10, 64, 16, sprintf_buffer);
 		sprintf ("INSANITY FALLS");
 		font_render_string_center (&font_mono5, 64, 4, sprintf_buffer);
-		sprintf ("%d X 20,000", (shots_falls));
+		sprintf ("%d X 20,000", shots_falls);
 		font_render_string_center (&font_mono5, 64, 26, sprintf_buffer);
 		bonus_sched_transition ();
 		dmd_show_low ();
 		sound_start (ST_SAMPLE, SND_BONUSTING2, SL_1S, PRI_GAME_QUICK3);
+		flasher_pulse (FLASH_R_MOUNTAIN_FL);
+		flasher_pulse (FLASH_L_MOUNTAIN_FL);
 		bonus_pause ();
 	}
 
@@ -188,13 +223,38 @@ void bonus_deff (void)
 		font_render_string_center (&font_fixed10, 64, 16, sprintf_buffer);
 		sprintf ("CAVE VISITS");
 		font_render_string_center (&font_mono5, 64, 4, sprintf_buffer);
-		sprintf ("%d X 20,000", (caveshots));
+		sprintf ("%d X 20,000", caveshots);
 		font_render_string_center (&font_mono5, 64, 26, sprintf_buffer);
 		bonus_sched_transition ();
 		dmd_show_low ();
 		sound_start (ST_SAMPLE, SND_BONUSTING3, SL_1S, PRI_GAME_QUICK3);
+		flasher_pulse (FLASH_R_MOUNTAIN_FL);
+		flasher_pulse (FLASH_L_MOUNTAIN_FL);
 		bonus_pause ();
 	}
+
+
+	if (lostmine_nrshot > 0)
+	{
+		dmd_alloc_low_clean ();
+		score_zero (bonus_scored);
+		score_add (bonus_scored, score_table[SC_20K]);
+		score_mul (bonus_scored, lostmine_nrshot); 
+		score_add (total_bonus, bonus_scored);
+		sprintf_score (bonus_scored);
+		font_render_string_center (&font_fixed10, 64, 16, sprintf_buffer);
+		sprintf ("LOST MINE");
+		font_render_string_center (&font_mono5, 64, 4, sprintf_buffer);
+		sprintf ("%d X 20,000", lostmine_nrshot);
+		font_render_string_center (&font_mono5, 64, 26, sprintf_buffer);
+		bonus_sched_transition ();
+		dmd_show_low ();
+		sound_start (ST_SAMPLE, SND_BONUSTING3, SL_1S, PRI_GAME_QUICK3);
+		flasher_pulse (FLASH_R_MOUNTAIN_FL);
+		flasher_pulse (FLASH_L_MOUNTAIN_FL);
+		bonus_pause ();
+	}
+
 
 	if (combos_nrdrops > 0)
 	{
@@ -207,11 +267,13 @@ void bonus_deff (void)
 		font_render_string_center (&font_fixed10, 64, 16, sprintf_buffer);
 		sprintf ("DISASTER COMBOS");
 		font_render_string_center (&font_mono5, 64, 4, sprintf_buffer);
-		sprintf ("%d X 20,000", (combos_nrdrops));
+		sprintf ("%d X 20,000", combos_nrdrops);
 		font_render_string_center (&font_mono5, 64, 26, sprintf_buffer);
 		bonus_sched_transition ();
 		dmd_show_low ();
 		sound_start (ST_SAMPLE, SND_BONUSTING4, SL_1S, PRI_GAME_QUICK3);
+		flasher_pulse (FLASH_R_MOUNTAIN_FL);
+		flasher_pulse (FLASH_L_MOUNTAIN_FL);
 		bonus_pause ();
 	}
 
@@ -226,11 +288,13 @@ void bonus_deff (void)
 		font_render_string_center (&font_fixed10, 64, 16, sprintf_buffer);
 		sprintf ("BOULDER LOOPS");
 		font_render_string_center (&font_mono5, 64, 4, sprintf_buffer);
-		sprintf ("%d X 20,000", (combos_nrrloops));
+		sprintf ("%d X 20,000", combos_nrrloops);
 		font_render_string_center (&font_mono5, 64, 26, sprintf_buffer);
 		bonus_sched_transition ();
 		dmd_show_low ();
 		sound_start (ST_SAMPLE, SND_BONUSTING1, SL_1S, PRI_GAME_QUICK3);
+		flasher_pulse (FLASH_R_MOUNTAIN_FL);
+		flasher_pulse (FLASH_L_MOUNTAIN_FL);
 		bonus_pause ();
 	}
 
@@ -245,7 +309,7 @@ void bonus_deff (void)
 		font_render_string_center (&font_fixed10, 64, 16, sprintf_buffer);
 		sprintf ("TRIPLE COMBOS");
 		font_render_string_center (&font_mono5, 64, 4, sprintf_buffer);
-		sprintf ("%d X 20,000", (combos_3made));
+		sprintf ("%d X 20,000", combos_3made);
 		font_render_string_center (&font_mono5, 64, 26, sprintf_buffer);
 		bonus_sched_transition ();
 		dmd_show_low ();
@@ -264,7 +328,7 @@ void bonus_deff (void)
 		font_render_string_center (&font_fixed10, 64, 16, sprintf_buffer);
 		sprintf ("QUAD COMBOS");
 		font_render_string_center (&font_mono5, 64, 4, sprintf_buffer);
-		sprintf ("%d X 25,000", (combos_4made));
+		sprintf ("%d X 25,000", combos_4made);
 		font_render_string_center (&font_mono5, 64, 26, sprintf_buffer);
 		bonus_sched_transition ();
 		dmd_show_low ();
@@ -283,7 +347,7 @@ void bonus_deff (void)
 		font_render_string_center (&font_fixed10, 64, 16, sprintf_buffer);
 		sprintf ("BOULDER AREA");
 		font_render_string_center (&font_mono5, 64, 4, sprintf_buffer);
-		sprintf ("%d X 20,000", (jets_extra_hit));
+		sprintf ("%d X 20,000", jets_extra_hit);
 		font_render_string_center (&font_mono5, 64, 26, sprintf_buffer);
 		bonus_sched_transition ();
 		dmd_show_low ();
@@ -302,7 +366,7 @@ void bonus_deff (void)
 		font_render_string_center (&font_fixed10, 64, 16, sprintf_buffer);
 		sprintf ("GOLD HITS");
 		font_render_string_center (&font_mono5, 64, 4, sprintf_buffer);
-		sprintf ("%d X 25,000", (gold_hitcount));
+		sprintf ("%d X 25,000", gold_hitcount);
 		font_render_string_center (&font_mono5, 64, 26, sprintf_buffer);
 		bonus_sched_transition ();
 		dmd_show_low ();
@@ -355,6 +419,8 @@ void bonus_deff (void)
 
 	task_kill_gid (GID_BONUS_BUTTON_MONITOR);
 
+	score_long (total_bonus);
+
 	dmd_alloc_low_clean ();
 	font_render_string_center (&font_fixed6, 64, 6, "TOTAL BONUS");
 	sprintf_score (total_bonus);
@@ -362,7 +428,6 @@ void bonus_deff (void)
 	dmd_show_low ();	
 
 	task_sleep_sec (2);
-
 	deff_exit ();
 }
 
@@ -372,32 +437,23 @@ void endgame_deff (void)
 	frame_draw (IMG_FLIPLOGO);
 	dmd_show2 ();
 	task_sleep_sec (2);
-
 	deff_exit ();
 }
 
 
-CALLSET_ENTRY (bonus, end_game)
-{
-	deff_start (DEFF_ENDGAME);
-	task_sleep_sec (1);
-	while (deff_get_active () == DEFF_ENDGAME)
-		task_sleep (TIME_500MS);
-}
-
 CALLSET_ENTRY (bonus, bonus)
 {
-	deff_start (DEFF_BONUS);
-	task_sleep_sec (1);
-	while (deff_get_active () == DEFF_BONUS)
-		task_sleep (TIME_500MS);
+	deff_start_sync (DEFF_BONUS);
+//	task_sleep_sec (1);
+//	while (deff_get_active () == DEFF_BONUS)
+//		task_sleep (TIME_500MS);
 }
 
-CALLSET_ENTRY (bonus, music_refresh)
-{
-	if (deff_get_active () == DEFF_BONUS)
-		music_request (MUS_MODE_SLOW_1, PRI_GAME_MODE1 +3);
-	if (deff_get_active () == DEFF_ENDGAME)
-		music_request (SND_GAMEOVER, PRI_GAME_MODE1 +3);
-}
+//-ALLSET_ENTRY (bonus, music_refresh)
+//{
+//	if (deff_get_active () == DEFF_BONUS)
+//		music_request (MUS_MODE_SLOW_1, PRI_GAME_MODE1 +3);
+//	if (deff_get_active () == DEFF_ENDGAME)
+//		music_request (SND_GAMEOVER, PRI_GAME_MODE1 +3);
+//}
 

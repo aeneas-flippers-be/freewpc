@@ -18,6 +18,11 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+ /*
+ 
+ Attract mode DEFF
+ 
+  */
 #include <freewpc.h>
 
 
@@ -37,7 +42,7 @@ CALLSET_ENTRY (bigfoot_amode, amode_page)
 	font_render_string_center (&font_var5, 64, 26, "AENEAS VERHE");
 	dmd_sched_transition (&trans_scroll_up_slow);
 	dmd_show_low ();
-	task_sleep_sec (2);
+	task_sleep_sec (1);
 
 	dmd_alloc_pair ();
 	frame_draw (IMG_FLIPLOGO);
@@ -60,6 +65,23 @@ CALLSET_ENTRY (bigfoot_amode, amode_page)
 	dmd_show_low ();
 	task_sleep_sec (1);
 
+	dmd_alloc_low_clean ();
+	font_render_string_center (&font_var5, 64, 5, "THANKS TO");
+	font_render_string_center (&font_var5, 64, 12, "BCD");
+	font_render_string_center (&font_var5, 64, 19, "JAMES C");
+	dmd_sched_transition (&trans_scroll_up_slow);
+	dmd_show_low ();
+	task_sleep_sec (1);
+
+	dmd_alloc_low_clean ();
+	font_render_string_center (&font_var5, 64, 5, "THANKS TO");
+	font_render_string_center (&font_var5, 64, 12, "URBANLEDGE");
+	font_render_string_center (&font_var5, 64, 19, "TOXIE");
+	font_render_string_center (&font_var5, 64, 26, "FLUPPER1");
+	dmd_sched_transition (&trans_scroll_up_slow);
+	dmd_show_low ();
+	task_sleep_sec (1);
+
 	dmd_alloc_pair ();
 	frame_draw (IMG_BFOOTLOGO);
 	dmd_sched_transition (&trans_scroll_up_slow);
@@ -67,4 +89,3 @@ CALLSET_ENTRY (bigfoot_amode, amode_page)
 	task_sleep_sec (2);
 
 }
-

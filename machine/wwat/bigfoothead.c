@@ -19,7 +19,7 @@
  */
 
 /*  
-instructions for bigfoot head
+instructions for bigfoot head - can move forward, backward, rotate
 */
 
 
@@ -33,52 +33,54 @@ U8 bfh_turnscw;
 /* turn face to front, wait, turn back */
 void bfh_showface_cw_task (void)
 {
-	bigfhead_go_cw_front ();
+	bigfhead_go_front_cw ();
 	task_sleep_sec (3);
-	bigfhead_go_ccw_back ();
+	bigfhead_go_back_ccw ();
 	task_exit ();
 }
 
 void bfh_showface_cw (void)
 {
-	task_create_gid (GID_BFHEAD, bfh_showface_cw_task);
+	if (!task_find_gid (GID_BFHEAD))
+		task_create_gid (GID_BFHEAD, bfh_showface_cw_task);
 }
 
 /* turn face to front, wait, turn back */
 void bfh_showface_ccw_task (void)
 {
-	bigfhead_go_ccw_front ();
+	bigfhead_go_front_ccw ();
 	task_sleep_sec (3);
-	bigfhead_go_cw_back ();
+	bigfhead_go_back_cw ();
 	task_exit ();
 }
 
 void bfh_showface_ccw (void)
 {
-	task_create_gid (GID_BFHEAD, bfh_showface_ccw_task);
+	if (!task_find_gid (GID_BFHEAD))
+		task_create_gid (GID_BFHEAD, bfh_showface_ccw_task);
 }
 
 void bfh_rotate_ccw (U8 nrturns)
 {
 	bfh_turnsccw = nrturns;
-	bigfhead_go_ccw_front ();
+	bigfhead_go_front_ccw ();
 }
 
 void bfh_rotate_cw (U8 nrturns)
 {
 	bfh_turnscw = nrturns;
-	bigfhead_go_cw_front ();
+	bigfhead_go_front_cw ();
 }
 
 CALLSET_ENTRY (bfhead, sw_bfhead_back)
 {
 	if (bfh_turnsccw > 0)
 	{
-		bigfhead_go_ccw_front ();
+		bigfhead_go_front_ccw ();
 	}
 	if (bfh_turnscw > 0)
 	{
-		bigfhead_go_cw_front ();
+		bigfhead_go_front_cw ();
 	}
 }
 
@@ -86,12 +88,12 @@ CALLSET_ENTRY (bfhead, sw_bfhead_front)
 {
 	if (bfh_turnsccw > 0)
 	{
-		bigfhead_go_ccw_back ();
+		bigfhead_go_back_ccw ();
 		bfh_turnsccw--;
 	}
 	if (bfh_turnscw > 0)
 	{
-		bigfhead_go_cw_back ();
+		bigfhead_go_back_cw ();
 		bfh_turnscw--;
 	}
 }
@@ -104,9 +106,9 @@ CALLSET_ENTRY (bfhead, start_ball)
 
 CALLSET_ENTRY (bfhead, tilt, end_game, end_ball)
 {
+	task_kill_gid (GID_BFHEAD);
 	bfh_turnsccw = 0;
 	bfh_turnscw = 0;
-	task_kill_gid (GID_BFHEAD);
-	bigfhead_go_cw_back ();
+//	bigfhead_go_back_cw ();
 }
 

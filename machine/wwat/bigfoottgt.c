@@ -19,13 +19,15 @@
  */
 
 /*  
-hitting 2 white targets qualifies bigfoot cave
+BIGFOOTTGT.C
+hitting 2 white targets qualifies bigfoot cave and starts cave hurryup
 scores double in wpch
 */
 
 #include <freewpc.h>
 #include "bigfoottgt.h"
 
+//show feet on dmd
 void bftgt_deff (void)
 {
 	dmd_alloc_low_clean ();
@@ -45,11 +47,6 @@ void bftgt_deff (void)
 	deff_exit ();
 }
 
-void bftgt_task (void)
-{
-	task_sleep_sec (8);
-	task_exit ();
-}
 
 void bftgt_ok_deff (void)
 {
@@ -83,13 +80,7 @@ void bftgt_reset (void)
 	lamp_off (LM_2BANK_LOW);
 }
 
-bool bftgt_twobank_checklit (void)
-{
-	if (global_flag_test (GLOBAL_FLAG_BIGFOOTTGT1) && global_flag_test (GLOBAL_FLAG_BIGFOOTTGT2))
-		return TRUE;
-	else
-		return FALSE;
-}
+
 
 /* check if all 2 are lit */
 void bftgt_twobank_check (void)
@@ -99,29 +90,42 @@ void bftgt_twobank_check (void)
 	if (global_flag_test (GLOBAL_FLAG_BIGFOOTLIT))
 		return;
 
-	if (bftgt_twobank_checklit)
+	//check if both targets are completed
+	if (global_flag_test (GLOBAL_FLAG_BIGFOOTTGT1) && global_flag_test (GLOBAL_FLAG_BIGFOOTTGT2))
 	{
-		global_flag_on (GLOBAL_FLAG_BIGFOOTLIT);	
-		speech_start (SND_BGFT_GR1, SL_2S);
-		bftgt_reset ();
-	
-		deff_start (DEFF_BFTGT_OK);
-
-		if (global_flag_test (GLOBAL_FLAG_RAFTMODE))
-		{
-			task_create_gid1 (GID_BIGFOOT, bftgt_task);
-			bfh_rotate_ccw (2);
-		}
-
-//		leff_start (LEFF_BFTG);
+		callset_invoke (bigftgt_completed);  //also in mball
 	}
 	else
 		deff_start (DEFF_BFTGT);
 }
 
-CALLSET_ENTRY (bftgt, lamp_update)
+
+
+CALLSET_ENTRY (bftgt, bigftgt_completed)
 {
-	if (global_flag_test (GLOBAL_FLAG_RAFTMODE) || global_flag_test (GLOBAL_FLAG_WPCH_RUNNING))
+	global_flag_on (GLOBAL_FLAG_BIGFOOTLIT);  //RULE : light bigfoot cave for award after completing two targets
+	bftgt_reset ();
+
+	deff_start (DEFF_BFTGT_OK);
+
+	if (global_flag_test (GLOBAL_FLAG_RAFTMODE) && !global_flag_test (GLOBAL_FLAG_MBALL_RUNNING))
+	{
+		speech_start (SND_BGFT_GR1, SL_2S);  //sound here as another starts in mball.c
+//			task_create_gid1 (GID_BIGFOOT, bftgt_task);
+		cave_start ();   // RULE : start cave hurryup
+//			bfh_rotate_ccw (2);
+	}
+}
+
+CALLSET_ENTRY (bftgt, raft_lamps_off)
+{
+	lamp_off (LM_2BANK_UP);
+	lamp_off (LM_2BANK_LOW);
+}
+
+CALLSET_ENTRY (bftgt, raft_lamps_on)
+{
+	if (global_flag_test (GLOBAL_FLAG_RAFTMODE))
 	{
 		if (global_flag_test (GLOBAL_FLAG_BIGFOOTTGT1))
 			lamp_on (LM_2BANK_UP);
@@ -130,30 +134,34 @@ CALLSET_ENTRY (bftgt, lamp_update)
 	}
 }
 
+//target hit
 CALLSET_ENTRY (bftgt, sw_2bank_up)
 {
 	if (global_flag_test (GLOBAL_FLAG_RAFTMODE) || global_flag_test (GLOBAL_FLAG_WPCH_RUNNING))
 	{
-		global_flag_on (GLOBAL_FLAG_BIGFOOTTGT1);	
+		global_flag_on (GLOBAL_FLAG_BIGFOOTTGT1);
+		lamp_on (LM_2BANK_UP);
 		bftgt_twobank_check ();
 	}
 }
 
+//target hit
 CALLSET_ENTRY (bftgt, sw_2bank_low)
 {
 	if (global_flag_test (GLOBAL_FLAG_RAFTMODE) || global_flag_test (GLOBAL_FLAG_WPCH_RUNNING))
 	{
-		global_flag_on (GLOBAL_FLAG_BIGFOOTTGT2);	
+		global_flag_on (GLOBAL_FLAG_BIGFOOTTGT2);
+		lamp_on (LM_2BANK_LOW);
 		bftgt_twobank_check ();
 	}
 }
 
-CALLSET_ENTRY (bftgt, end_ball)
-{
+//-ALLSET_ENTRY (bftgt, end_ball, tilt)
+//{
 //	deff_stop (DEFF_BFTGT_OK);
 //	deff_stop (DEFF_BFTGT);
-	task_kill_gid (GID_BIGFOOT);
-}
+//	task_kill_gid (GID_BIGFOOT);
+//}
 
 CALLSET_ENTRY (bftgt, start_ball)
 {

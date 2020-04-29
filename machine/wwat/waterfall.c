@@ -19,8 +19,10 @@
  */
 
 /*
-bit similar to manoverboard/mapmode
-waterfall - get to the edge of the river in time, shoot all left or all right hz
+NOT USED ANYMORE DOES NOT WORK
+RULES: this is a bit similar to manoverboard/mapmode
+waterfall is shown on dmd, shooting left hazards moves you left, shooting right hzs moves you right
+- get to the edge of the river in time
 
 fall at 115 pix
 
@@ -37,18 +39,16 @@ U8 fall_movedown;
 
 score_t fall_score;
 
-
-sound_code_t fall_sounds[5] = {
-SND_SPLASH_1, SND_SPLASH_2, SND_SPLASH_3, SND_SPLASH_4, SND_SPLASH_5};
+sound_code_t fall_sounds[5] = {SND_SPLASH_1, SND_SPLASH_2, SND_SPLASH_3, SND_SPLASH_4, SND_SPLASH_5};
 
 
 void fall_running_deff (void)
 {
 	for (;;)
 	{
-		dmd_alloc_pair ();
+		dmd_alloc_pair_clean ();
 		frame_draw (IMG_FALL2);
-		bitmap_blit2 (fallraft1_bits, fall_positionx, fall_positiony);
+		bitmap_blit (fallraft1_bits, fall_positionx, fall_positiony);
 
 		sprintf_score (fall_score);
 		font_render_string_left (&font_mono5, 2, 27, sprintf_buffer);
@@ -57,7 +57,7 @@ void fall_running_deff (void)
 		task_sleep (TIME_200MS);
 		task_sleep (TIME_50MS);
 
-		dmd_alloc_pair ();
+		dmd_alloc_pair_clean ();
 		frame_draw (IMG_FALL3);
 
 		sprintf_score (fall_score);
@@ -65,16 +65,16 @@ void fall_running_deff (void)
 
 		if (fall_moveup > 0)
 		{
-			bitmap_blit2 (fallraftl_bits, fall_positionx, --fall_positiony);
+			bitmap_blit (fallraftl_bits, fall_positionx, --fall_positiony);
 			fall_moveup--;
 		}
 		else if (fall_movedown > 0)
 		{
-			bitmap_blit2 (fallraftr_bits, fall_positionx, ++fall_positiony);
+			bitmap_blit (fallraftr_bits, fall_positionx, ++fall_positiony);
 			fall_movedown--;
 		}
 		else
-			bitmap_blit2 (fallraft2_bits, fall_positionx, fall_positiony);
+			bitmap_blit (fallraft2_bits, fall_positionx, fall_positiony);
 
 		dmd_show2 ();
 		task_sleep (TIME_200MS);
@@ -85,10 +85,10 @@ void fall_running_deff (void)
 void fall_ok_deff (void)
 {
 	dmd_alloc_low_clean ();
-	font_render_string_center (&font_fixed6, 64, 8, "WATERFALL");
-	font_render_string_center (&font_fixed6, 64, 18, "RESCUE");
+	font_render_string_center (&font_fixed6, 64, 4, "RAFT SAVED");
+	font_render_string_center (&font_var5, 64, 14, "SHORE REACHED");
 	sprintf_score (fall_score);
-	font_render_string_center (&font_mono5, 64, 24, sprintf_buffer);
+	font_render_string_center (&font_mono5, 64, 26, sprintf_buffer);
 	dmd_show_low ();
 	task_sleep_sec (2);
 	deff_exit ();
@@ -96,9 +96,9 @@ void fall_ok_deff (void)
 
 void fall_shotmade (U8 shot)
 {
-	if (fall_positiony == 8) 
+	if (fall_positiony <= 8) // was ==
 		sound_start (ST_SAMPLE, SND_NICEPEDDLPART, SL_3S, PRI_GAME_QUICK3);
-	if (fall_positiony == 21) 
+	if (fall_positiony >= 21) // was == 
 		sound_start (ST_SAMPLE, SND_GOODGOINGPART, SL_3S, PRI_GAME_QUICK3);
 	else
 		sound_start (ST_SAMPLE, fall_sounds[random_scaled (5)], SL_3S, PRI_GAME_QUICK3);
@@ -131,13 +131,9 @@ void fall_stop (void)
 	task_kill_gid (GID_FALL);
 	deff_stop (DEFF_FALL_RUNNING);
 
-	lamp_tristate_off (LM_HZ_BOULDER_GARDEN);
-	lamp_tristate_off (LM_HZ_SPINE_CHILLER);
-	lamp_tristate_off (LM_HZ_NO_WAY_OUT);
-	lamp_tristate_off (LM_HZ_DISDROP);
-	lamp_tristate_off (LM_HZ_BOOM_BEND);
+	raft_hz_lamps_tri_off ();
 
-	global_flag_on (GLOBAL_FLAG_RAFTMODE);
+	raftmode_on ();
 }
 
 
@@ -179,7 +175,7 @@ void fall_timer_task (void)
 
 void fall_start (void)
 {
-	global_flag_off (GLOBAL_FLAG_RAFTMODE);
+	raftmode_off ();
 
 	fall_positionx = 5; //was 2
 	fall_positiony = 14;
@@ -191,13 +187,15 @@ void fall_start (void)
 
 	global_flag_on (GLOBAL_FLAG_FALL_RUNNING);
 
+	lamp_tristate_flash (LM_HZ_BOULDER_GARDEN);
+	lamp_tristate_flash (LM_HZ_SPINE_CHILLER);
+	lamp_tristate_flash (LM_HZ_NO_WAY_OUT);
+	lamp_tristate_flash (LM_HZ_DISDROP);
+	lamp_tristate_flash (LM_HZ_BOOM_BEND);
+
 	task_sleep_sec (2);
 	task_create_gid1 (GID_FALL, fall_timer_task);
 }
-
-
-
-
 
 
 
@@ -217,13 +215,14 @@ CALLSET_ENTRY (fall, left_ramp_made)
 	}
 }
 
-CALLSET_ENTRY (fall, dev_lock_enter)
-{
+//ALLSET_ENTRY (fall, dev_lock_enter)
+/*{
 	if (global_flag_test (GLOBAL_FLAG_FALL_RUNNING))
 	{
 		fall_shotmade (3);
 	}
 }
+*/
 
 CALLSET_ENTRY (fall, sw_disas_drop_main)
 {
@@ -242,18 +241,6 @@ CALLSET_ENTRY (fall, right_loop_made)
 }
 
 
-CALLSET_ENTRY (fall, lamp_update)
-{
-	if (global_flag_test (GLOBAL_FLAG_FALL_RUNNING))
-	{
-		lamp_tristate_flash (LM_HZ_BOULDER_GARDEN);
-		lamp_tristate_flash (LM_HZ_SPINE_CHILLER);
-		lamp_tristate_flash (LM_HZ_NO_WAY_OUT);
-		lamp_tristate_flash (LM_HZ_DISDROP);
-		lamp_tristate_flash (LM_HZ_BOOM_BEND);
-	}
-}
-
 CALLSET_ENTRY (fall, display_update)
 {
 	if (global_flag_test (GLOBAL_FLAG_FALL_RUNNING))
@@ -270,7 +257,7 @@ CALLSET_ENTRY (fall, music_refresh)
 	}
 }
 
-CALLSET_ENTRY (fall, end_ball)
+CALLSET_ENTRY (fall, end_ball, tilt)
 {
 	if (global_flag_test (GLOBAL_FLAG_FALL_RUNNING))
 	{

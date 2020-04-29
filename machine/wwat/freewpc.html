@@ -1,0 +1,762 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="/flippers3.css" media="Screen" /><link rel="stylesheet" type="text/css" href="/flippers3mob.css" media="handheld, only screen and (max-device-width:480px)" />
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<meta http-equiv="Content-Language" content="en" />
+<meta name="keywords" content="FreeWPC manual" />
+<meta name="description" content="FreeWPC manual" />
+<title>Flippers.be - FreeWPC manual</title>
+<script type="text/javascript">
+    window.cookieconsent_options = {"message":"This website uses cookies to ensure you get the best experience on our website","dismiss":"Accept","learnMore":"More information","link":"http://www.flippers.be/cookies.html","theme":"dark-bottom"};
+</script>
+<script type="text/javascript" src="//s3.amazonaws.com/cc.silktide.com/cookieconsent.latest.min.js"></script>
+</head><body>
+<div id="wbox"><div class="white_top"><div></div></div><div class="white_box">
+<div id="flipperslogo"><a href="http://www.flippers.be/"><img src="/images/flippers.jpg" width="400" height="121" alt="Flippers" /></a></div>
+<div class="tabmenu"><ul>
+<li><a href="/pinball_basics.html"><span>Pinball<br />&nbsp;&nbsp;101</span></a></li>
+<li class="selected"><a href="/pinball_restoration.html"><span>Restore<br />&nbsp;&nbsp;pins</span></a></li>
+<li><a href="/pinball_various.html"><span>Various<br />&nbsp;</span></a></li>
+<li><a href="/pinball_mods.html"><span>Custom<br />&nbsp;pins</span></a></li>
+<li><a href="/pinball_shows.html"><span>Shows<br />&nbsp;</span></a></li>
+<li><a href="/pinball_european.html"><span>European<br />&nbsp;games</span></a></li>
+<li><a href="/pinball_bookreviews.html"><span>&nbsp;Book<br />reviews</span></a></li>
+<li><a href="/forsale.html"><span>For<br />sale</span></a></li>
+<li><a href="/contact.html"><span>Contact<br />&nbsp;&nbsp;&nbsp;us</span></a></li></ul></div>
+<div id="yelbox">
+<div id="ggltopad"><script type="text/javascript"><!--
+google_ad_client = "pub-0713707920622806";
+google_alternate_color = "F6DD6B";
+google_ad_width = 728;
+google_ad_height = 15;
+google_ad_format = "728x15_0ads_al_s";
+//2007-08-13: fl-top5links
+google_ad_channel = "2605130801";
+google_color_border = "F6DD6B";
+google_color_bg = "F6DD6B";
+google_color_link = "0066FF";
+google_color_text = "000000";
+google_color_url = "000000";
+//--></script><script type="text/javascript" src="http://pagead2.googlesyndication.com/pagead/show_ads.js"></script></div>
+<div id="maincontent">
+
+
+
+
+<h1>My FreeWPC manual</h1>
+
+<p>Here are some guidelines of what I learned whilst working with the FreeWPC software.</p>
+
+<p>There is already some documentation, but not everything is as detailed as it should be.<br />
+It's also a bit spread out :<br />
+- there's <a href="https://github.com/bcd/freewpc/tree/master/doc/" target="_blank" rel="nofollow">
+documentation in github itself</a>, but that doesn't always explain the functions in detail<br />
+- there's the <a href="https://github.com/bcd/freewpc/tree/master/machine/" target="_blank" rel="nofollow">
+source code of other machines</a>, in which you can search for the actual implementation of these calls<br />
+- there's <a href="https://groups.google.com/forum/#!forum/freewpc/" target="_blank" rel="nofollow">
+the freewpc google group</a> where a lot of questions were answered (most around 2010-2012 when some people were developing)
+</p>
+
+<p>I learned a lot by combining these sources, and hope this document will explain the basics a bit more.</p>
+
+<p>Some things are important but are only casually mentioned in the posts on the group when someone encountered an issue with it.
+The example games are not consistent, freewpc has changed and expanded overtime, some games do things in one way while other games do it in another (better) way.</p>
+
+<p>The basic steps are also not very detailed (especially how to start from scratch on a new game) and do certain things, and the best way of working on this.<br />
+The more you're busy, the more you're learn about the framework and its functions.. after a while you may look back at some of the first code you wrote and want to change it, but sometimes it's already expanded so much that it's not easy to rewrite it all..
+so I hope with my help you are able to get some basics right from the beginning.</p>
+
+<p>Note this is not a complete manual ! I don't know or understand everything in freewpc (or even about C programming..).
+It's more a list of things I learned myself.</p>
+
+
+
+<h2>What is Freewpc</h2>
+
+<p>It's a software framework that allows you to create new game rules and compile this into a rom-file that's compatible with WPC hardware.
+You can burn this rom-file on an eprom, install in a real WPC-89 pinball machine, and it will (should) work.
+You can also play it in Visual Pinball.</p>
+
+<p>Note that (at the moment) it does <strong>not work</strong> in a real WPC-95 machine ! It will work in Visual Pinball, but installed in a real machine the cpu will not boot correct.</p>
+
+<p>Do you really need an eprom burner ? That will depend if you want to create a rom that will actually work in a machine or if you only want to play with it in VP. If you want to make it work 'for real', yes, then you need access to an eprom burner from the beginning.<br />
+You probably don't want to spend weeks / months writing new rules and then find out that it doesn't work in a real machine because the visual pinball simulation is a bit different.. You will do most of your initial testing in VP (say around 80 percent), but it's best to test all new features in the actual machine too. It's easier to trigger certain switches by hand and simulate a specific condition, and you'll see specific things that are not obvious or consistent in VP.</p>
+
+<p>Programming is done in the C language. This isn't extermely difficult and there are a lot of manuals for it.
+If you have no programming experience whatsoever then I suggest you look up some tutorials first.
+If you have some programming knowledge, even in other languages then you're probably fine for most things.<br />
+You can learn a lot from the other games. After all, almost everything of game rules can be brought back to checking a status,
+setting a lamp, reacting on a switch..
+Only when you need to do something special like programming realtime drivers (ie to let special motors run, like the racetrack on Corvette or clock on Twilight Zone) then it gets more complicated.</p>
+
+<p>How good the finished result is, depends on a lot of things.<br />
+Mostly on how much time and effort you want to put in, but also on the game you start with.
+Considering the game rules themselves, FreeWPC allows (almost) everything. That won't be an issue.
+Most time and effort will go in polishing the look and feel.<br />
+An important limit is that you can't change sounds. You can only use the sound and music that is available in the original game.
+Some games have a lot of speech calls, others only have a limited set. You can only use whats in. Sometimes samples are not or not often used in the current software, which you do can use in your new rules. <br />
+Last are the dmd graphics. Legally you can't re-use any of the graphics and animations in the existing rom (if you don't mind the legal issue or don't intend to spread the gamerom, then you can use pinball browser to view and rip all graphics from the original rom and re-use them). Replacing them by quality handdrawn artwork takes skill and effort.</p>
+
+
+
+<h2>Installation</h2>
+
+<p>For installation of freewpc, eclipse and gcc under windows, there's <a href="http://freewpc.googlecode.com/files/HOWTO%20-%20Install%20and%20Configure%20FreeWPC%20on%20Windows.pdf"  target="_blank" rel="nofollow">a howto document created by Dominic Clifton</a>.
+Follow that procedure, and make sure you can succesfully compile a rom for one of the existing games.
+The whole setup may take a few hours..<br />
+I recently installed a newer version of Eclipse (Mars) and this also works, although some screenshots had changed.
+<br />Update: document can be downloaded <a href="freewpcsetup.zipx">here from my site</a>.</p>
+
+<p>The master branch on github has some tables. 
+Other people have made their own, like DemoMan. Those latest versions are not put back into the main branch but can be found in their own branch. It's best to also download these so you have more examples of real developed games.</p>
+
+<p>You should also install Visual Pinball and pinmame so you can test and play the compiled rom.
+Register on vpforums.com and install these programs and the pinball table that you want to make a new rom for.</p>
+
+<p>I made a .bat file on my desktop that will add the compiled rom from the /build/ forder and add it into the correct zipfile so VP uses it:<br />
+<code>
+copy C:\Freewpc\src\build\wwatr_l50_1.rom "C:\Program Files (x86)\Visual Pinball\VPinMAME\roms\wwatr_l5.rom"
+"C:\Program Files (x86)\Winzip\winzip32.exe" -min -u "C:\Program Files (x86)\Visual Pinball\VPinMAME\roms\ww_l5.zip" "C:\Program Files (x86)\Visual Pinball\VPinMAME\roms\wwatr_l5.rom"
+pause
+</code>
+<br />I strongly suggest you automate some tasks like this that you have to execute after each build, to save some time.</p>
+
+
+
+<h2>File types</h2>
+
+<p>All files used by the build process need to have a format with unix-style EOL characters. Usually this isn't a problem when you start with the file from another machine as an example and only edit things within Eclipse. When you start with an empty file or first edit it another editor (notepad, ..) or copy/paste text from other sources (like the github.com website) then you may run into this issue.<br />
+Either set your editor to save the correct file format or use in a command window the program 'dos2unix' to convert the file.<br />
+In Notepad++ you can see what end-of-line character is used by selecting View/Show Symbol/Show End of line. If it shows LF then the file is good to use. If you have CRLF then you need to change this. In Notepad++ this is easy, just select Edit/EOL Conversion/Unix format. If Unixformat is greyed out then it's already good.<br />
+When the file is created on a windows system then you may get weird error messages.<br />
+On an incorrect machine file, the build process gave an error on about an empty line in the .md file.
+In the image file (ild) it will fail with an error that it couldn't find the file but the filename in the error message contained an extra line. If your pgm image files (saved by DMDPaint for example) are in the incorrect type, they will load and the build will complete, but the image will not display on the dmd.</p>
+
+<p>Eclipse also seems not to like when you import new files / overwrite them in outside programs.
+Use F5 on the main folder (or at the top of the freewpc project, rightclick and select refresh.
+I got the impression that sometimes even that wasn't enough, new pgm files I open in the Eclipse text editor first now.</p>
+
+
+
+
+<h2>Starting a new table</h2>
+
+<p>First decide on the name / initials of the game (I chose 'wwat'). From now on I'll mention this as 'gamename'.
+Under the /machines/ and /include/ folder, make a new folder for your machine with this gamename.</p>
+
+<p>In the /machines/gamename/ folder, you need at least 2 new files: Makefile (without extension) and a machine definition file (gamename.md).<br />
+Make them as empty files, or copy them from another game. From which one is up to you to decide.
+To make a new file in Eclipse, right-click on the folder gamename, select New, and then select 'New Source'. Enter the filename with extension.
+In the /min/ game are empty examples but these are really empty. <br />
+I prefer to take one from an existing game that is similar in hardware to yours. These files have more comments about the parameters. Use Funhouse or Bop for WPC-89 with alphanumeric displays, TZ for pre-DCS, Corvette or demoman for DCS. Copy the files and change/remove (almost) everything that's filled in..</p>
+
+
+
+<h2>Makefile settings</h2>
+
+<p><h4>MACHINE_FILE = wwat.md</h4><br />
+insert gamename here.. tells freewpc where the machine file is and how it's called.
+<br /> <br />
+<h4>GAME_ROM_PREFIX = wwatr_l5</h4><br />
+this is what the output file in the /build/ folder will be called
+easiest is take the same name now as is needed for virtual pinball.
+<br /> <br />
+<h4>ROM_PAGE_COUNT = 32</h4><br />
+This is important !<br />
+It's best to start with the same size as the original game rom. Then it will work in VP/Pinmame.
+When you need more room later (because you programmed so many rules, or included a lot of graphics) you can increase the size but then it's not easy anymore to test it within VP/Pinmame.
+<br /> <br />
+	MACHINE_MAJOR = 0<br />
+	MACHINE_MINOR = 1<br />
+Version numbers of your rom. Just put something low. When you have released a rom you can start increasing it to keep track of what version someone is testing..
+<br /> <br />
+GAME_OBJS =<br />
+GAME_PAGED_OBJS = <br /> 
+and so on.. just leave every of these settings empty for now.</p>
+
+
+
+<h2>Machine file settings</h2>
+
+<p>The machine file has most definitions about the physical machine / playfield you want to program for.
+It's a descriptions of lamps, coils, switches, and settings used by your specific rules.
+Start lines with # to put something in comment. Do NOT put comments on the same line behind valid entries.</p>
+
+<p>Best is to copy a machine file (with all comments) from another implemented game so you keep the general structure
+(all comments and start of blocks within []) and then fill it with your game.</p>
+
+<p>First part is the name and type:<br />
+<h4>Title: bigfoot</h4>
+<br /> <br />
+ Title is the name of your game. It's what's shown on the dmd at startup.<br />
+The game titles used by WMS are copyrighted so you shouldn't use them. Therefor mine is Bigfoot instead of Whitewater, Demolition Time instead of Demolition Man, and so on. Just take a new name, so no confusion can exist between your rom and an official WMS rom.
+<br /> <br />
+<h4>include platform/wpc/wpc-fliptronic.md</h4><br />
+Set this to the type of hardware your machine is using. See existing games for examples (wpc alphanumeric, wpc-89, wpc security, dcs).
+If you use wpc-dcs then you need to set some additional parameters (see .md file of demoman).
+<br /> <br />
+<h4>define parts</h4><br />
+With define you can already set some things that are consistant.
+Examples are if the game has upper flippers,  music in certain conditions (attract mode, gameover, ..)
+See other md files for examples but only set them if you need them.
+<br /> <br />
+<h4>[lamps]</h4><br />
+First block in most games defines all lamps used by the machine.<br />
+Take the manual and search for the lamp list / lamp table. Start typing.. :)
+You need at least to write the lamp number and a name. <br />
+Don't just blindly type over every name, as sometimes lamps have names that aren't obvious.
+Feel free to give a lamp another name if that's suits better with the rules you have in mind or feels more natural to use it later.</p>
+
+<p>For example, on Whitewater the orange arrow lamps to indicate hazards are hazard 1 till hazard 7.
+But the hazards have names and sounds in the game (spine chiller, no way out, ..). So it's better to give the lamps a good name.
+Just keep everything consistent (lamp, switch and coil definition), else you'll get confused later. You don't want to look up each time that lamp 'hazard 7' is related with switches 'canyon main' and 'canyon entry' and soundcalls 'bigfoot bluff'. Just name everything something related to bigfootbluff..
+
+<p>Some keywords can be added to indicate special lamps: shoot-again, ball-save, extra-ball.
+These lamps will then be used by the freewpc common framework.
+
+<p>You can add the colors of the lamps. Possible values are in tools/genmachine. This is optional. 
+That way you can later program lamp effects like turn on/off all lamps of a specific color.
+
+<p>If you are really ambitious you can add the coordinates too, by adding it as , y(1), x(9). This is optional.
+One way is to start from a photo straight down of the playfield or take the playfield drawing from the manual and draw lines over it..
+The top left corner is x(0), y(0). Lamps more to the right increase their y(), lamps towards the bottom of the playfield increase x().
+(X- and Y-axes are opposite of math)
+This can be used to make lamp effects where all lamps go on/off from one side of the playfield to the other.
+If you use this then you need to set the parameters:<br />
+Lamp-Matrix-Width:<br />
+Lamp-Matrix-Height:</p>
+
+<p><h4>[switches]</h4><br />
+Here you define all switches that are used by the machine. This is similar to the definition of the lamps.
+Again start with looking up the switch table in the manual, and start typing. Keep in mind that some manuals may contain errors..<br />
+Here also note the name of each switch and see if it's consistent and makes sense. Try to even keep some consistency in how you order switch (top, middle, bottom, or up, center, low). It only makes it easier for yourself later..<br />
+Another example on whitewater is the popper on the left side of the playfield. The whirlpool feeds this popper from a ramp below the playfield. Its the whirlpool popper coil and whirlpool popper switch.. but the assembly above the playfield is known as 'lost mine'. So it's better to change the name of everything involved to lost mine, then you immediately look at the left of the playfield.</p>
+
+<p>There are some extra parameters you can set for most switches, make use of this.
+The keywords are described in the comment block:
+<br /> <br />
+# Options can be given in any order:<br />
+#    ingame - only service the switch during a game<br />
+#    intest - also service the switch in test mode<br />
+#    novalid - tripping this switch does NOT mark ball in play<br />
+#    standup - this is a standup<br />
+#    button - this is a button<br />
+#    edge - this switch should be serviced on either transition<br />
+#    opto - this switch is optical and activates on closed->open<br />
+#<br />
+# These parameters mark various well-known switches.  Only one of these<br />
+# can exist per type:  outhole, slam-tilt, tilt, shooter, start-button, buyin-button<br />
+#<br />
+# Use sound() to invoke a sound call automatically when the switch activates.<br />
+# Use c_decl() to override the default name of the switch event.<br />
+<br /> <br />
+Opto, edge, standup and button are required to set.
+Setting a switch as edge lets you test if it's getting pushed in or going open.
+<br /> <br />
+An example of c_decl() is:<br />
+51: left slingshot, ingame, c_decl(sw_sling)<br />
+52: right slingshot, ingame, c_decl(sw_sling)</p>
+
+<p>Both slingshots will generate the same sw_sling event.<br />
+For popbumpers something similar is used, all three bumpers generate the same event.
+When writing game rules it makes it easier, you don't have to write the same part for both the left and right slingshot.
+Unless this is what you want.. for example on Twilight Zone you have 3 different colored popbumpers, there you maybe do want to do something different (score different points) for each popbumper hit.</p>
+
+<p>Defining switches as 'ingame' or 'novalid' is not really required but makes it easier. 
+Then freewpc knows for instance if the ball is shot onto the playfield from the plunger.
+You set 'novalid' on switches that don't get hit by the pinball, for instance on optos/switches to indicate the position of a motor of a specific assembly (like the position of bigfoots head on whitewater).</p>
+
+<p>Switches will be used uppercase in the C code but in the rest of the machine file (like where you declare the containers) they're case sensitive !<br />
+So I suggest you use all lowercase names here..</p>
+
+
+<p><h4>[Drives]</h4><br />
+Now it gets important. In this section will you define all coils and flashers.<br />
+Mistakes here CAN DAMAGE your machine.<br />
+If you will only make a rom for use in VP then the strength settings don't matter.
+In a real machine it's best to put the power settings first low. Then test the rom in the actual machine, do the coil test, play a few games, and tune each coil individually. Increase the strength and time in small steps until it's strong enough.</p>
+
+<p>For most coils that are shortly activated (slingshots, bumpers) it's pretty safe to take over settings used by other people.
+Upkickers require some tuning, usually they need enough power. Start low and increase each time until it's strong enough to get the pinball out consistent without retrying.</p>
+
+<p>The biggest risk is with coils that are special. Think of very small coils, or coils that are activated for a longer period of time (multiple seconds). Ramp diverters and magnets are examples.
+These are usually duty-driven. Some need an initial powerful pulse, but the activate them for a longer time they are pulsed on/off in a specific pattern of time (milliseconds).<br />
+If you have an oscilloscope you can measure how the original gamerom drives them. If not you have to experiment.
+It's best to look at the existing tables and how they use specific solenoids.
+If they're a new type of coil then start with low values and increase step by step, until you see the coil has enough power, without it getting too hot.<br />
+That's the most dangerous part here. Give small coils an initial pulse that's too big and they can burn fast, but get it the pattern  wrong and a coil may look like it's working correct but slowly start to overheat and get damaged the longer it gets used.</p>
+
+
+<p>Coils are defined with a letter (H, L, G, A, F) and number.
+To map this you need the solenoid table from the manual and look at the details there.</p>
+
+<p>Coils H are high power (50v) solenoids, on connector J130.<br />
+Coils L are low power (50v) solenoids, on connector J127. Usually these are flashers, slingshots and bumpers.<br />
+Coils G are general solenoids, connector J126. Mostly flashers.<br />
+Coils A are J122 pins 1-2-3-4.<br />
+Coils F are J902 on the fliptronics board. Some games without upper flippers use these transistors for other coils.</p>
+
+<p>Type H, L and G are easy to list, usually they're well defined in the manual and you can just type over the list.
+A and F are used on less machines, then you may need to compare the machine file and manual of another game to find out what pin number equals what coil number. Sometimes you just have to test (in VP !) if you get the definition correct.</p>
+
+<p>Flashers are easy, you only need to specify their port, name and the keyword 'flash'. No need to set power levels.
+For example: G1: Bigfoot body fl, flash</p>
+
+<p>Coils are defined like this:<br />
+ L2: Left slingshot, duty(SOL_DUTY_100), time(TIME_33MS)</p>
+
+<p>Each coil has a duty and a time part. Duty() says how strong (SOL_DUTY_25 is 25 percent strength, 100 is full power).
+Time is how many milliseconds the coil is activated.
+Start with low/safe values - SOL_DUTY_50 and TIME_50MS are a good start.</p>
+
+<p>Ballserve, launch and knocker are three known types of coils. Add this keyword and the framework will take care of them.
+If you add this and defined the through and outhole switches, the machine will be playable: it'll serve a pinball, and correct cycle to the next one when it drains.</p>
+
+<p>Autolaunch isn't in the documentation/md files, it should be used like this:<br />
+ H3: Autofire, nosearch, launch</p>
+
+<p><h4>[templates]</h4><br />
+The templates section is an extension of the above drives coil definition.<br />
+In the /drivers/ folder are drivers for specific types of coils, that are often found in games.
+You can even make a new driver if you need one, especially if you need a fast response time.</p>
+
+<p>What you will probably need are the outhole, jet and sling drivers.<br />
+But even for assemblies like a drop target and a motorised target bank there are drivers already available.
+Just define the name of the object and provide the needed parameters (usually coil / switch names) and the driver knows how to deal with the assembly (like activate the coil of a popbumper when the switch is hit).</p>
+
+
+<p><h4>[containers]</h4><br />
+Containers are another thing we need to define. These are assemblies that can (temporary) hold one or more pinballs.<br />
+Think of locks, scoops, upkickers, .. The ballthrough is the minimum you need to provide as each machine will have one.<br />
+You give these a name, tell what solenoids activates it (to release a pinball), and what switches are involved in descending order. 
+init_max_count(x) tells the driver how many pinballs should be in it in normal use. The device will always try to keep this number of balls. Game rules we will add later will tell the device what to do when a balls enters it (play a sound, wait kicking out and first display something on the dmd, or keep the pinball locked).
+<br /> <br />
+Example: Trough: Ball Release, trough, init_max_count(3), Trough 3, Trough 2, Trough 1<br />
+Note everything is case sensitive. If your switches are named 'trough 1' then having 'Trough 1' here will give a build error..</p>
+
+
+<p><h4>[gi]</h4><br />
+These are the general illumination strings. Usually there are 5. Each has a name. Just define these.
+FreeWPC does not do much with GI strings. It can't dim them for example, only on/off.</p>
+
+
+
+<h2>Compiling an empty machine rom</h2>
+
+<p>Now we have defined all the necessary parts to have a running machine.
+If you have followed the setup document, it ended with compiling a Corvette rom. 
+Change the .config file, put corvette in comments and add your gamename. Compile..</p>
+
+Note that in the main directory (where the .config file is) an 'err' file will appear. This always happens after compiling, even when there were no errors. This file is important later, when a build fails somehow, more detailse of the problem can be found here.</p>
+
+When the build succeeds you have a rom for the playfield, without any specific rules.
+This file has the name you defined in the makefile with version number added, and can be found (along with a lot of other files) in the /build/ folder.</p>
+
+First we will test it in VP. Add this file into the zip-file for the specific game in the Visual pinball/pinmame/roms/ folder.<br />
+Start the table in VP, and your new rom will be used. In VP keys 7-8-9-0 are used for the menu buttons, at startup there will be a warning message from freewpc. Pass this warning message: 0 key = enter to continue, then go back to attract mode and use key 7 to put a service credit on the game.<br />
+Key 1 is the start button, you can even start a game. If it's a playfield with a manual plunger then you can plunge a ball onto the playfield, it'll bounce around by the bumpers, containers will kick the ball onto the playfield again, flippers work by pressing the shift keys,..
+Just nothing of rules or sounds happen.
+On games with an automatic plunger you can't play yet, later you'll need to program the button to activate the kicker solenoid..</p>
+
+<p>Flip the ball around the playfield and see if everything behaves like it should.</p>
+
+<p>Then it's time to go into  selftests (using the menu buttons) and inspect your machine definition in detail.
+FreeWPCs menu is very similar to the original WMS setup structure with tests, adjustments, .. I assume you're familiar with that.</p>
+
+<p>Do the lamp test, check if the lamps on the playfield are defined ok.<br />
+Then do the solenoid test. Check if the coils are defined ok (in VP you can't test much except that the correct coil is used and you didn't swap around coil numbers.</p>
+
+
+<p>Now you can burn the rom image onto an eprom and test it in a real machine. Best is to first disconnect the short flatcable between the cpu and powerdriver board. Btw always do things like this (disconnecting/connecting cables, changing an eprom, ..) when the pinball machine is off !<br />
+With the cpu isolated you can check if it boots correct. If it did in pinmame it probably will, but you never know.
+When it boots correct and doesn't seem to lock on / reset, first do the switch test.
+Test each switch on the playfield. It should report correct each switch. Double check that optos are defined as such, else you'll get weird behavior (especially when they're used in containers, forgetting to set a switch as opto will make the container think it has a ball and it'll try to kick it out all the time..).</p>
+
+<p>Btw make sure that before starting with Freewpc that your machine is working correct and has no existing issues.. especially that all switches work correct. Freewpc has no switch compensation (unless you program it yourself). When a switch or lamp doesn't work, at least you know it isn't an issue with the physical playfield and it must be somewhere in your machine definition.. </p>
+
+<p>Once all switches are correct, re-connect the flatcable again. Now the coils and lamps will be activated.
+Listen careful when you switch on the machine that no coil is immediately enabled and locked on..</p>
+
+<p>If all looks safe, continue the self-tests. First we'll do all lamps, that's easiest. Again go over each lamp, make sure the correct lamp lights and you have the description correct.</p>
+
+<p>Then test all coils. Similar like with lamps and switches, make sure you have them all correct in the md file and the correct coil is activated.
+In the selftests initially they are pulsed for a short amount of time. Using the flipper buttons you can increase the strength and test already what power settings coils like upkickers need. </p>
+
+<p>If this all looks good, you can start a game. Just let the pinball go around the playfield and enjoy, you're ready to start programming game rules !</p>
+
+
+
+
+<h2>Defining sounds</h2>
+
+<p>The next step is making a list of all available music and sounds. Contrary to WMS eproms which only let you listen to a few predefined sounds, Freewpc allows you to listen to everything available in the sound roms. Sometimes you will hear sounds that are not used at all in existing games, or used very rarely. It's always nice to discover such secrets.</p>
+
+<p>You can do this on VP or in the real machine.</p>
+
+<p>Note: if you don't want to create this file and define the sounds, you should add this in the .md file:
+<br />define MACHINE_LACKS_ALL_INCLUDES<br />
+But I think it's better to just create the files, copy them from another machine and remove the game-specific contents..</p>
+
+<p>Go in the test menu to the sound test. Sounds are started similar to the WMS sound test, using the service buttons.
+Advance sounds one by one. Usually at the beginning there are the music tracks (which loop and keep on running forever), and later are short sounds and speech samples.</p>
+
+<p>Each sound is numbered hexadecimal, starting at 0x0000 until 0x00FF for the first bank. Not all numbers are used but this gives 1024 possible sounds available.</p>
+
+<p>Depending on the type of game, there are multiple banks of sounds. With the flipper buttons you can move to the next bank.
+WPC-95 games have up to 5 banks. The numbering is 0x0000 to 0x00FF for the first bank, 0x0100 to 0x1FF for the next, and so on.</p>
+
+<p>I suggest you first listen to all sounds to get an idea of what is available. When you want to make new game rules, you are bound to the available music and sounds. Think about what you will do and when you want to use what sound.</p>
+
+<p>You can't add new soundtracks or new samples. Unless you install a www.pinsound.org board, then you can customise everything, but lets stick to the default soundboard.</p>
+
+<p>You can also use this program: http://rbelmont.mameworld.info/?page_id=223   to dump all sounds to a wav.
+Then you can use a music editing program to listen to the samples in detail. It's useful when you want to play samples after eachother and need to know exact timing.</p>
+
+<p>All the sounds you want to use need to be defined (surprise, surprise..).
+This is in a sound.h file which goes into the /include/gamename/ folder.</p>
+
+<p>Check the files from other machines for examples, you need the beginning and end structure.. and for each sound/music you need a line:
+<br /> define NAME hex
+<br />
+hex is the position in the sound bank that you found in with the music selftest.</p>
+
+<p>You don't have to map the system sounds in bank 1 between hex50 and 60. These are the same on every game (add credit, service button, ..) and are already known by default by freewpc.</p>
+
+<p>The name you give to each item should make sense. Most people let it start with MUS_ for music (which keeps on looping so it can run in the background) and SND_ for sounds. You can also use something liks SPC_ for speech calls. Then you usually remember better what it sounds, but you can also play sound and speech calls at the same time (starting one speech call whilst the other is still running will abort the first).</p>
+
+<p>It's probably a good idea to compare how sounds and music are used in the original game. Often a short sound is played when a specific switch is activated (like on slingshots, ramps, ..). Look for these on the original gamerom and try to re-use them.
+In the .md file you can even add this in the switch definition using sound().
+Having these short sounds will immediately make the game more polished as the player gets familiar feedback when making a shot.</p>
+
+
+<h2>Start writing new rules</h2>
+
+<p>If all goes well now you have a good develop environment, a working (and tested ?) machine description file.<br />
+It's finally time to start what we wanted to do from the beginning, writing custom rules !</p>
+
+<p>I can't tell you what to do or what the ideal procedure is.. just start with something small and see what rules you get to, or do you want to think about everything in detail before you start to code and test ? It's probably best to have a general ieda of everything you want, but when you're starting to learn to code in freewpc you better start with small steps.<br />
+Do you want to go crazy and make totally new rules, or do you inspire yourself on the existing rules for that game and will you extend them ? It's up to you. Going crazy is sometimes difficult as we're bound by the physical layout of the playfield, lamps (and the names on the playfield), switches and sounds..</p>
+
+
+<h2>Create a new rules file</h2>
+
+<p>Once you have decided the rules you want to implement, it's best to split them up in small function blocks.
+Usually this is bound to a specific assembly on the playfield. For instance jet bumpers, inlanes, ..<br />
+Keep the code related to one assembly together in a file that you give a meaningful name.</p>
+
+<p>Lets do something simple to start with: score 10 points each time a slingshot is hit.<br />
+Right-click in the machine gamename folder, select new, 'New source' and name the file 'slings.c'</p>
+
+<p>Open the file in the editor. Every file needs to have at the top:<br />
+#include <freewpc.h></p>
+
+<p>Add this below:<br />
+CALLSET_ENTRY (slings, sw_sling)<br />
+{<br />
+	score (SC_10);<br />
+}
+</p>
+
+<p>For this code to work, your machine definition file needs 2 things:
+<br />- a score definition for 10 points. Add '10:' under the [scores] part so you get this:<br />
+[scores]<br />
+10:<br />
+- your slingshots switches need the c_decl(sw_sling) part, read about that above where we defined switches..
+</p>
+
+<p>Now you have written the slingshot rule, you need to tell Eclipse to included it in the build.<br />
+This is done in the Makefile file. Just add 'slings.o' behind GAME_OBJS= or  GAME_PAGED_OBJS=  <br />
+Note it ends with .o and not with .c like the filename !<br />
+Then start a build (if you still have .o files in the folder, first clean the solution by starting the 'clean' build which you had setup using Dominic's setup document.<br />When the build fails check the 'Err' file in the root folder of the project for more information and fix the error.
+When it completes, congratulations then, you have successfully added new rules ! You can take the .rom file from the build/ folder and test it in visual pinball. Sling hits will score 10 points now.</p>
+
+<p>When you add rules, always give the file a meaningful name. I suggest you start your rules with something small, like inlanes/outlanes or jetbumpers.
+On most playfields these are assemblies that have one small rule. Check the other machines for examples.<br />
+With bumpers you usually want to play a sound and score some points. You can sometimes increase/decrease a counter of the
+number of bumper hits and then do something special. With rollovers or inlanes/outlanes you usually want the player to light
+all (and move them with the flipper buttons) and award something when they are all lit.<br />
+When enough switches are hit, or for example a target bank was completed, you can start a specific mode. That's how you build
+up the rules. And each time you have added a rule (a new file), compile it and test it in visual pinball.
+Remember to test often, you don't want to spend days or weeks adding a lot of new rules and then try to test it all at once.
+If something bad happens the machine may crash but you may not easily know what caused the crash. If you have added only specific rule it's much easier to find the bug that causes the crash..</p>
+
+
+
+<h2>Callset_entry</h2>
+
+<p>When you look at the implementation of other games you probably noticed there are a lot of blocks start with CALLSET_ENTRY.<br />
+How Freewpc works is there certain events happen (a game starts, a ball is served, a switch is closed, ..) and you write code that reacts to these events.<br />
+The syntax is :<br />
+CALLSET_ENTRY (test, event [, event])<br />
+{<br />
+code goes here
+}<br />
+'test' is the name of the code block you're working on. It's best to keep it linked to the filename so you know where to search when you get an error about it. You can use multiple names in the same file, but you cannot reuse a name in multiple files. If you do (by copy/pasteing a block of code and forgetting to change the name for example), then at compile time you will get an error that it is already used in the other file.<br />
+'event' is the event where you want to react to. You can execute the same code for multiple events, then just add the event names.
+The names of events of switch closures will depend on how you defined switches in your machine definition.
+For instance if you defined 3 different switches for the popbumpers: bumper 1, bumper 2 and bumper 3, you can generate this entry:<br />
+CALLSET_ENTRY (jets, sw_bumper_1, sw_bumper_2, sw_bumper_3) {..} and execute the same code for each hit, this is better than having:
+<br />CALLSET_ENTRY (jets, sw_bumper_1) {..}
+<br />CALLSET_ENTRY (jets, sw_bumper_2) {..}
+<br />CALLSET_ENTRY (jets, sw_bumper_3) {..}
+</p>
+
+
+<p>You can react in multiple files to the same event. So you can have :<br />
+CALLSET_ENTRY (rule1, sw_switch_1)
+<br />and in another file have: CALLSET_ENTRY (rule2, sw_switch_1)<br />
+Both blocks of code will get executed when switch_1 is triggered. You do not know the order in which they are executed and you should make sure they do not interfere with eachother. You probably want to test in each block if a certain mode is running and only then do something.</p>
+
+<p>There are also general events where you can react to.
+lamp_update and music_refresh will happen about every 500ms. Then you can check specific flags to turn lamps on (don't forget to turn them off later) or request a new soundtrack to be played when ie a new mode has started.<br />
+Other interesting events are start_player (where you do your first initialisation of variables, start_ball and end_ball,
+but there are even events like tilt, match and so on. Check kernal/game.c for the most interesting events.</p>
+
+
+
+<h2>Defining shots made</h2>
+
+<p>Many pinball playfields have multiple switches used in orbits, ramps, and so on.
+The pinball can sometimes follow multiple paths (for instance go up or down a ramp or orbit).
+You want to know the direction the pinball is going and react different.<br />
+Most example games do this in a file shots.c<br />
+To do this efficient freewpc makes use of free timers.
+If you want to add a new timer you have to define it under the [timers] part of your machine definition file.
+Just add<br />
+timername: <br />
+In your code then you can use it as TIM_TIMERNAME .<br />
+Then you can use it everywhere - you can start, restart or stop it, and you can test if a timer is already running.
+If you start it you say for how many seconds it runs, after that time it will stop automatically.<br />
+In this example I check the shot on a ramp towards a mini playfield is made succesfully up or the pinball came down.</p>
+
+<p>
+CALLSET_ENTRY (simple, sw_left_ramp_enter)<br />
+{<br />
+	if (free_timer_test (TIM_LRAMPDOWN))<br />
+	{<br />
+		free_timer_stop (TIM_LRAMPDOWN);<br />
+		callset_invoke (left_ramp_down);<br />
+	}<br />
+	else<br />
+	{<br />
+		free_timer_restart (TIM_LRAMP, TIME_2S);<br />
+	}<br />
+}<br />
+
+CALLSET_ENTRY (simple, sw_left_ramp_main)<br />
+{<br />
+	if (free_timer_test (TIM_LRAMP))<br />
+	{<br />
+		free_timer_stop (TIM_LRAMP);<br />
+		callset_invoke (left_ramp_made);<br />
+	}<br />
+	else<br />
+	{<br />
+		free_timer_restart (TIM_LRAMPDOWN, TIME_2S);<br />
+	}<br />
+}
+</p>
+
+<p>How it works : when then the bottom switch sw_left_ramp_enter is triggered I check if the timer by the top switch is running.
+If yes then the pinball comes down, I stop the timer and generate the event 'left_ramp_down'.
+That's something I can use further in my game rules.<br />
+If the top switch wasn't triggered, the pinball is going up and I start the timer for 2 seconds.
+<br /> <br />On the top switch sw_left_ramp_main I do something similar.<br />
+If the timer from the bottom switch is running I know the ball came up and I generate the left_ramp_made event.
+If not then the pinball is starting to go down and I start the timer for it.<br />
+Now the award is only given when the shot is made succesfully until the top, not when you enter the ramp and the pinball doesn't make it.. This code could be extended to even detect shots going up the ramp that don't make it until the top (you will get 2 bottom switch closures).
+<br />Other examples are in the WCS and AFM sources.</p>
+
+<p>There's something new here: callset_invoke (). Use this to generate your own event. 
+In other parts of the code you can then use callset_entry() and act on this event.<br />
+Don't go too crazy with callset_invoke(). It should not be used to start modes or in place of function calls.
+There's more overhead involved and there can be a small delay until the code is started compared to function calls.<br />
+But it's ideal to detect shots on which other rules react to.</p>
+
+
+<h2>Let's turn on a lamp !</h2>
+
+<p>The lowlevel call to turn a lamp on is lamp_on (LM_LAMPNAME) and lamp_off (). <br />
+LM_LAMPNAME = LM_ and then the lamp name as defined in the [lamps] part of your machine file, in uppercase and with spaces replaced with _ .</p>
+
+<p>What you can also use are the lamp_tristate functions:	lamp_tristate_on (), lamp_tristate_flash (), lamp_tristate_off ()<br />
+They give you the added functionality of being able to let a lamp flash on/off.</p>
+
+<p>You can't use the tristate functions in lamp effects (leffs) and you also can't pass them to lamplist_apply().
+If you want to flash a lamp in a leff then you need to turn it on, use a sleep function for some milliseconds, and turn it off again.
+Also try to keep your useage consistent, don't mix both options. If you use lamp_tristate_on () then later use lamp_tristate_off () and not lamp_off ().</p>
+
+
+<h2>Variables, flags and global flags</h2>
+
+<p>Variables are used to store things. How many times a ramp or target has been shot, boolean variables which you can set to FALSE or TRUE (uppercase !) to check if the player has completed a mode, ..</p>
+
+<p>In the beginning of your code you define variables, which you can use in the rest of that file. It's best to always initialise them to 0 (or another value) before it's used later. Usually you do this when the player starts or a new pinball is served, so start_player or start_ball event.<br />
+You can also define new variables in a block of code, then they get destroyed once you exit that block.
+Datatypes most used are:<br />
+U8 = unsigned integer<br />
+bool = boolean</p>
+
+<p>Useful are the bounded_increment() and bounded_decrement() functions.<br />
+For example:<br />
+ U8 balls_locked;<br />
+ U8 nr_of_rampshots;<br />
+ bounded_decrement (balls_locked, 0);
+ bounded_increment (nr_of_rampshots, 255);
+<br />A U8 variable can only have values between 0 and 255.<br />
+We could do balls_locked--; and nr_of_rampshots++; but then we will pass these safe limits.
+Now you can increase/decrease the value until the limit is reached.</p>
+
+<p>Freewpc also has global flags and flags. These are specific bit variables which you can only set on/off and test their state.
+The WPC hardware does not have lots of free memory, you may run out when your rules get to big.<br />
+Flags use less memory (1 bit instead of 1 byte) but come with a bit of speed overhead. The difference is that global variabls are shared among all players (so usually you want to set them off when a player drains his pinball, like when you end a mode). Regular flags or variables where you put __local__ before are instantiated for each player. That way you can keep track if every of the 4 players has finished a certain mode.
+<br />To use flags or global flags you need to add them first in the machine definition file under [flags] and [global flags] section.
+<br />In code then you can use flag_on (FLAG_FLAGNAME), flag_off () and flag_test () and global_flag_on (GLOBAL_FLAG_FLAGNAME), ..</p>
+
+<p>If you really need to save memory then you can even use bit operators, see
+<a href="https://en.wikipedia.org/wiki/Bitwise_operations_in_C" target="_blank">this wikipedia article</a>
+<br />For examples check the demolition time code.</p>
+
+
+<h2>Paging</h2>
+
+<p>Before we can continue with things like lamp effects, display effects and prototypes, you need to learn a bit more about how the build process in C works internally. When you compile (make) the rom, all the files are compiled from .c into .o files, and these are linked together into pages. These pages can be accessed by the wpc hardware and are limited in size. Add too many code and it can become full.
+The WPC hardware cannot keep the complete code (everything on the eprom) in its memory and use it at the same time. It sometimes needs to switch between them. Although this happens fast, there is some overhead (delay).</p>
+
+<p>In what bank a specific part of code goes, is in the makefile. It depends on where you add the files:
+GAME_OBJS =<br />
+GAME_PAGED_OBJS = <br /> 
+GAME2_OBJS = <br /> 
+GAME3_OBJS = 
+</p>
+
+<p>GAME_OBJS are the fastest part as this is always in memory. It is limited in size as the freewpc code itself is already there.<br />
+GAME_PAGED_OBJS is the second fastest, because it resides in the same page as the event (CALLSET_ENTRY) processor.
+So try to put your shot detection and other rules that have a lot of callset entries here.
+But this will grow when you add callsets somewhere else so do not fill it completely.<br />
+The others banks (GAME2_OBJS, ..) should be used when the first two banks become full. There is overhead involved when calling these, especially when you call things from another bank. Always try to keep related code together in the same bank.
+</p>
+
+<p>If you make a mistake in the declarations (you say a deff/leff/external function is in MACHINE_PAGE while the code is in MACHINE2_PAGE for example), you will get a CRASH ! The pinball machine will suddenly reboot.. Troubleshooting these resets can be frustrating, so once your code starts to grow, please pay a lot of attention to where you place things (especially if you start to move around code because pages are getting full) and what code references what other code.</p>
+
+
+
+<h2>Display effects</h2>
+
+<p>Display effects (deffs) need to be defined in the machine definition file in the [deffs] section.
+<br />You need to tell what page their code resides in.<br />Most example games have their deffs mixed with rules code.
+This works, but when you want to add a lot of display effects and start with images and animations they will use a lot of memory.
+Then it's better to put all deffs together in a seperate file.
+In the machine file you just define in what machine_page the deff is located.
+A mistake here will result in a crash when the deff is started.. you can test deffs in the selftest, any wrong definition will crash there
+(it's easier to test them all that way than to simulate gameplay until the correct deff is started..)</p>
+
+<p>The possible priority parameters and their order can be found in /include/priority.h<br />
+The queue parameters and what they do are in /include/system/deff.h<br />Don't just copy them from another game but check what the deffs 
+do and decide on the priorities for your game.</p>
+
+<p>If you define a deff in the [deffs] section but don't have the implementation somewhere (void deffname_deff), 
+this can happen because you forgot to implement it or because you commented out the file in Makefile, 
+then the build will fail with an error that deff_deffname is defined in __machine.</p>
+
+
+<h2>Lamp effects</h2>
+
+<p>Lamp effects are similar to display effects. They run in the background, so in your code you can just use leff_start()
+and the lamp effect will run, while your code doesn't have to wait.<br />
+They are declared in the [leffs] section of the machine definition file. You need to tell what page they are located in.
+Same as for deffs, it's easiest to keep a seperate file assigned for this and not mix them with game rule code.
+Defining it in a wrong page results in a crash. And you can also test all leffs using the selftests.<br />
+If the effects acts on lamps, you need to include them in a lamplist and include the lamplist in the leff definition as
+LAMPS(LAMPLISTNAME)  Note it's in uppercase !</p>
+
+<p>Don't use lamp_on() lamp_off() in leffs. Use leff_on () leff_off () instead.</p>
+
+<p>I noticed when I add a new lamplist and immediately use it in a new leff, the build process fails.
+Seems you have to add the lamplist, run a successful build, then add the leff and build again.</p>
+
+
+
+
+<h2>Prototypes</h2>
+
+<p>If you follow the guidelines above, you can implement some rules but they are all contained within their own file.<br />
+Usually rules become dependend on each other - you want to start one or more from another part, or test variables that were 
+used somewhere else. Prototypes are something in C, they are empty declarations of functions without the actual 
+implementation.
+<br /> To do this you can use the protos.h file or 'extern' keyword.</p>
+
+<p>In the /include/gamename/ folder is a file protos.h</br />
+There we can add prototypes for functions and tell freewpc where it can find them. When you use a function, the program knows where the implementation can be found.</p>
+
+<p>GAME_PAGED_OBJS need __machine__<br />
+GAME2_OBJS is labelled MACHINE2_PAGE and prototypes need __machine2__  (similar for GAME3 and GAME4)</p>
+
+
+
+<h2>Devices</h2>
+
+<p>Funhouse code has a check in quickmb.c dev_tunnel_kick_request that returns true/false if a device can eject a pinball.
+The problem is that device.c makes no difference between specific devices. If you have multiple containers on your 
+playfield you can not use this code to disable the kickout from one device and let another one kick out first..<br />
+Then check TZ' code which has a sleep loop on the kick_attempt of a specific device, that way you can let one 
+device wait until another is ready.</p>
+
+
+
+
+
+<h2>Extras</h2>
+
+<p>Some games have :<br />
+	if (!in_live_game)<br />
+		return;<br />
+This is not needed if you declared the switch in the machine file as 'ingame', then the event can only happen whilst a game is busy.
+Only on things like flipper buttons you need to test if they are pressed in the game or during test:
+	if (in_game)<br />
+Note: you DO need to check this on dev_xxx_kickout_attempt ! Don't check specific variables or do special things in 
+this part as the event can also happen when there is no-one playing (ie it's game over and locked balls are released) 
+and then you get a crash !</p>
+
+<h2>Fonts</h2>
+
+<p>Do not use lowercase characters or special signs in display effects. Most included fonts only have definitions for uppercase characters, 
+numbers and a few special characters. Trying to display lowercase chars or something else that isn't defined, will result in a crash.</p>
+
+<p>Fonts are converted from ttf into a XBM filetype. Freewpc can easily display these xbm characters if you want 
+to make your own small animations or special characters. See DemoTime for examples, in the .h includes there are 
+some characters defined.<br />http://4umi.com/web/javascript/xbm.php
+ is an online editor you can use to draw these sprites. You can also draw them (only 2 colors !) in a program like Paint.Net, 
+save as png and then convert them online at http://www.aconvert.com/image/  into XBM file format. 
+Copy/paste the output into the .h file and use them in your code with bitmap_blit.</p>
+
+
+<h2>Build process comments</h2>
+
+<p>The build process scans all files for 'CALLSET_ENTRY' lines but doesn't check well if the lines are in comment..
+so whilst developing if you put a large block in comments with /*  ...  */  the build process will still generate entries for
+the callset_entry lines it'll find and fail because it doesn't find the implementation.<br/>
+Solution is to change the line, make it 'ALLSET_ENTRY' (remove the C) when you put these blocks in comment..</p>
+
+<p>Also check for spaces as they matter with the callset processing.
+If you have: <br />
+CALLSET_ENTRY (skill, sw_rapids_main_ramp)<br />
+and:<br />
+CALLSET_ENTRY (skill, sw_rapids_main_ramp )<br />
+with a space behind the name, the build will fail..
+</p>
+
+
+</div>
+</div><!--yelbox --><div id="yelboxfooter"></div>
+<div id="footer"> &copy; Aeneas Verh&eacute; - <a href="http://www.flippers.be/">www.Flippers.be</a>&nbsp;
+</div>
+
+</div ><!--whitebox --><div class="white_bot"><div></div></div></div><!-- analytics --><script type="text/javascript">
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-110190-1']);
+  _gaq.push(['_trackPageview']);
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();</script></body></html>

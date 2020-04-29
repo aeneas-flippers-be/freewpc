@@ -19,21 +19,22 @@
  */
 
 /* 2 ball mb frenzy similar to wpchall */
+/* target lamps cycle, hitting lit target scores extra  */
+//TODO : check if it's not too difficult, then light 2 lamps or more instead of 1
 
 #include <freewpc.h>
-//#include <ballsave.h>
+#include <ballsave.h>
 //#include <bigfhead.h>
 
 
+extern U8 lock_player_locks_lit;
+extern U8 lock_balls_in_devlock;
+
+extern U8 gold_hitcount;
+extern score_t gold_score;
+
 bool gold_hit;
-U8 gold_hitcount;
 U8 gold_sound_index;
-
-score_t gold_score;
-score_t gold_scorebegin;
-extern U8 *current_score;
-extern U8 lock_locks_lit;
-
 
 sound_code_t gold_sounds[4] = {SND_PINGBASS1, SND_PINGBASS2, SND_PINGBASS3, SND_PINGBASS1};
 
@@ -41,12 +42,12 @@ sound_code_t gold_sounds[4] = {SND_PINGBASS1, SND_PINGBASS2, SND_PINGBASS3, SND_
 
 void goldrush_lamps_task (void)
 {
-	lamplist_set_apply_delay (TIME_50MS);
 	lamplist_apply (LAMPLIST_GOLDRUSH, lamp_off);
 	lamp_on (LM_RIVER_R1);
 	for (;;) {
 		lamplist_rotate_next (LAMPLIST_GOLDRUSH, lamp_matrix);
-		task_sleep (TIME_100MS);
+		task_sleep (TIME_300MS);
+
 		if (gold_hit)
 		{
 			gold_hit = FALSE;
@@ -54,7 +55,6 @@ void goldrush_lamps_task (void)
 			task_sleep (TIME_200MS);
 		}
 	}
-//	leff_exit ();
 	task_exit ();
 }
 
@@ -62,55 +62,51 @@ void gold_stop (void)
 {
 	global_flag_off (GLOBAL_FLAG_GOLD_RUNNING);
 //		global_flag_off (GLOBAL_FLAG_HOLD_MINE_KICKOUT);
-	global_flag_off (GLOBAL_FLAG_PF_LAMPS_OFF);
+	score_long (gold_score);
 	deff_stop (DEFF_GOLD_RUNNING);
 	leff_stop (LEFF_GOLDRAFTS);
 	task_kill_gid (GID_GOLDLAMPS);
 
-	score_copy (current_score, gold_score);
-	score_sub (gold_score, gold_scorebegin);
-
-	deff_start (DEFF_GOLD_TOTAL);
-	global_flag_on (GLOBAL_FLAG_RAFTMODE);
+	raftmode_on ();
 }
 
 void gold_start (void)
 {
-	global_flag_off (GLOBAL_FLAG_RAFTMODE);
+	raftmode_off ();
 	global_flag_on (GLOBAL_FLAG_GOLD_RUNNING);
 	speech_start (SND_ITSGOLDRUSH, SL_4S);
-	lamps_out ();
 	gold_hit = FALSE;
 	gold_sound_index = 0;
 	task_create_gid1 (GID_GOLDLAMPS, goldrush_lamps_task);
 	leff_start (LEFF_GOLDRAFTS);
 
-	score_copy (current_score, gold_scorebegin);
+	score_zero (gold_score);
+
 
 //	ballsave_disable ();
+	ballsave_add_time (1);
 
 	/* new ball from lock unless none available */
-	if (device_recount (device_entry (DEVNO_LOCK)) > 0)
+	if (lock_balls_in_devlock > 0)
 	{
-		bounded_increment (lock_locks_lit, 3);
+		bounded_increment (lock_player_locks_lit, 3);
 		lock_unlockball ();
 		task_sleep (TIME_200MS);
 	}
 	else
 	{
 		global_flag_on (GLOBAL_FLAG_BALL_AT_PLUNGER);
-		device_unlock_ball (device_entry (DEVNO_TROUGH));
-//			sol_request (SOL_BALL_RELEASE);
-//			sol_request_async (SOL_BALL_RELEASE);
+		sol_request (SOL_BALL_RELEASE);
 
 		while (global_flag_test (GLOBAL_FLAG_BALL_AT_PLUNGER))
 		{
 			task_sleep (TIME_100MS);
 		}
-//		global_flag_off (GLOBAL_FLAG_HOLD_LOCK_KICKOUT);
-//		task_sleep_sec (1);
 	}
+	ballsave_add_time (1);
 	global_flag_off (GLOBAL_FLAG_HOLD_MINE_KICKOUT);
+	task_sleep_sec (1);
+	set_ball_count (2);
 }
 
 
@@ -134,7 +130,6 @@ void gold_start (void)
 //			}
 	}
 //		global_flag_off (GLOBAL_FLAG_HOLD_MINE_KICKOUT);
-//		task_sleep_sec (1);
 //		set_ball_count (2);
 }
 */
@@ -144,7 +139,7 @@ void gold_tgthit (void)
 {
 		gold_hit = TRUE;
 		sound_start (ST_SAMPLE, SND_PINGBASSSHORTLOOP, SL_4S, PRI_GAME_QUICK3);
-		score (SC_1M);
+		score_add (gold_score, score_table[SC_1M]);
 }
 
 CALLSET_ENTRY (gold, sw_3bank_top)
@@ -238,7 +233,7 @@ CALLSET_ENTRY (gold, any_pf_switch)
 {
 	if (global_flag_test (GLOBAL_FLAG_GOLD_RUNNING))
 	{
-		score (SC_25K);
+		score_add (gold_score, score_table[SC_25K]);
 
 		gold_sound_index++;
 		if (gold_sound_index > 3)
@@ -272,7 +267,7 @@ CALLSET_ENTRY (gold, start_ball)
 	gold_hitcount = 0;
 }
 
-CALLSET_ENTRY (gold, end_ball)
+CALLSET_ENTRY (gold, end_ball, tilt)
 {
 	if (global_flag_test (GLOBAL_FLAG_GOLD_RUNNING))
 	{

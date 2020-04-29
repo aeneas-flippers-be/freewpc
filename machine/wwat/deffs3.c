@@ -21,17 +21,27 @@
 #include <freewpc.h>
 //#include "deffs3.h"
 
-extern __machine__ U8 riverclass;
-extern __machine__ U8 shots_falls;
-extern __machine__ U8 wpch_jackpots_made;
+extern U8 gold_hitcount;
+extern score_t gold_score;
 
-extern __machine2__ U8 mmil_count;
-extern __machine2__ U8 gold_hitcount;
-extern __machine2__ U8 qmb_jp_mul;
-extern __machine2__ score_t gold_score;
-extern __machine2__ U8 skill_made;
+extern U8 wpch_jackpots_made;
+
+extern U8 mmil_count;
+
+extern U8 qmb_jp_mul;
+
+extern U8 riverclass; 
+
+extern U8 shots_falls;
+
+extern U8 skill_ramp_made;
+extern U8 skill_bigf_made;
+extern U8 skill_count;
 
 
+
+//this will take what's in the sprinf_buffer (only 1 line !!!) and flash it
+//will not flash what was on the dmd if there were more lines
 void flash_and_exit_deff (U8 flash_count, task_ticks_t flash_delay)
 {
 	dmd_alloc_pair ();
@@ -83,17 +93,15 @@ void jackpot_deff (void)
 void bigfoot_jackpot_deff (void)
 {
 	dmd_alloc_low_clean ();
-	sprintf("BIGFOOT");
-	font_render_string_center (&font_var5, 64, 16, sprintf_buffer);
-	sprintf("JACKPOT");
-	font_render_string_center (&font_var5, 64, 22, sprintf_buffer);
+	font_render_string_center (&font_fixed6, 64, 12, "BIGFOOT");
+	font_render_string_center (&font_fixed6, 64, 22, "JACKPOT");
 
 	dmd_show_low ();
 	task_sleep_sec (1);
 	deff_exit ();
 }
 
-void mb_start_deff (void)
+void mb_intro_deff (void)
 {
 	sprintf ("MULTIBALL");
 	flash_and_exit_deff (30, TIME_100MS);
@@ -108,8 +116,7 @@ void mb_running_deff (void)
 		dmd_clean_page_low ();
 		sprintf_current_score ();
 		font_render_string_center (&font_fixed6, 64, 16, sprintf_buffer);
-		sprintf("SHOOT FALLS");
-		font_render_string_center (&font_var5, 64, 27, sprintf_buffer);
+		font_render_string_center (&font_var5, 64, 27, "SHOOT FALLS");
 		dmd_copy_low_to_high ();
 		font_render_string_center (&font_fixed6, 64, 4, "MULTIBALL");
 		dmd_show_low ();
@@ -148,30 +155,6 @@ void mb_relocked_deff (void)
 	deff_exit ();
 }
 
-void kickback_deff (void)
-{
-	U8 i;
-	U8 x;
-	x = 20;
-
-	for (i = 0; i < 10; i++)
-	{
-		dmd_alloc_low_clean ();
-		frame_draw (IMG_WATER1);
-		font_render_string_center (&font_fixed10, x, 16, "RAFT SAVED");
-		dmd_show_low ();
-		task_sleep (TIME_100MS);
-
-		x = x+2;
-		dmd_alloc_low_clean ();
-		frame_draw (IMG_WATER2);
-		font_render_string_center (&font_fixed10, x, 16, "RAFT SAVED");
-		dmd_show_low ();
-		task_sleep (TIME_100MS);
-		x = x+2;
-	}
-	deff_exit ();
-}
 
 void lock_lit_deff (void)
 {
@@ -218,11 +201,11 @@ void lock_lock3_deff (void)
 	deff_exit ();
 }
 
-void wpch_start_deff (void)
+void wpch_intro_deff (void)
 {
 	dmd_alloc_low_clean ();
-	font_render_string_center (&font_fixed6, 64, 16, "WHIRLPOOL");
-	font_render_string_center (&font_fixed6, 64, 26, "CHALLENGE");
+	font_render_string_center (&font_fixed6, 64, 10,"WHIRLPOOL");
+	font_render_string_center (&font_fixed6, 64, 21, "CHALLENGE");
 	dmd_show_low ();
 	task_sleep_sec (2);
 	deff_exit ();
@@ -237,8 +220,7 @@ void wpch_running_deff (void)
 		dmd_clean_page_low ();
 		sprintf_current_score ();
 		font_render_string_center (&font_fixed6, 64, 16, sprintf_buffer);
-		sprintf("SHOOT WHIRLPOOL");
-		font_render_string_center (&font_var5, 64, 27, sprintf_buffer);
+		font_render_string_center (&font_var5, 64, 27, "SHOOT WHIRLPOOL");
 		dmd_copy_low_to_high ();
 		font_render_string_center (&font_fixed6, 64, 4, "WPOOL MBALL");
 		dmd_show_low ();
@@ -271,11 +253,12 @@ void wpch_jackpot6_deff (void)
 {
 	dmd_alloc_low_clean ();
 	font_render_string_center (&font_fixed6, 64, 10, "FULL");
-	font_render_string_center (&font_fixed6, 64, 20, "WHIRLPOOL");
+	font_render_string_center (&font_fixed6, 64, 21, "WHIRLPOOL");
 	dmd_show_low ();
 	task_sleep_sec (1);
 	deff_exit ();
 }
+
 void mmilcollected_deff (void)
 {
 	dmd_alloc_low_clean ();
@@ -290,7 +273,7 @@ void mmilcollected_deff (void)
 	deff_exit ();
 }
 
-void qmb_start_deff (void)
+void qmb_intro_deff (void)
 {
 	sound_start (ST_SAMPLE, SND_BOWLINGBALL, SL_3S, PRI_GAME_QUICK1);
 	dmd_alloc_low_clean ();
@@ -345,10 +328,13 @@ void gold_running_deff (void)
 		score_update_start ();
 		dmd_alloc_pair ();
 		dmd_clean_page_low ();
-		sprintf_current_score ();
+
+//		sprintf_current_score ();
+		sprintf_score (gold_score);
 		font_render_string_center (&font_fixed6, 64, 16, sprintf_buffer);
 		sprintf("%d GOLD HIT", gold_hitcount);
 		font_render_string_center (&font_var5, 64, 27, sprintf_buffer);
+
 		dmd_copy_low_to_high ();
 		font_render_string_center (&font_fixed6, 64, 4, "GOLDRUSH");
 		dmd_show_low ();
@@ -362,15 +348,6 @@ void gold_running_deff (void)
 	}
 }
 
-void gold_total_deff (void)
-{
-	dmd_alloc_low_clean ();
-	font_render_string_center (&font_var5, 64, 5, "GOLD RUSH TOTAL");
-	sprintf_score (gold_score);
-	font_render_string_center (&font_fixed6, 64, 16, sprintf_buffer);
-	task_sleep_sec (1);
-	deff_exit ();
-}
 
 
 void wpm_enter_deff (void)
@@ -403,7 +380,7 @@ void wet_qual_deff (void)
 	deff_exit ();
 }
 
-void wet_start_deff (void)
+void wet_intro_deff (void)
 {
 	dmd_alloc_low_clean ();
 	font_render_string_center (&font_fixed10, 64, 16, "WET WILLY");
@@ -433,20 +410,12 @@ void wet_nok_deff (void)
 	task_sleep_sec (1);
 	deff_exit ();
 }
+
 void lostmine_deff (void)
 {
 	dmd_alloc_low_clean ();
 	font_render_string_center (&font_fixed6, 64, 10, "LOST MINE");
 	font_render_string_center (&font_fixed6, 64, 21, "FOUND");
-	dmd_show_low ();
-	task_sleep_sec (1);
-	deff_exit ();
-}
-
-void redtgt_kickback_deff (void)
-{
-	dmd_alloc_low_clean ();
-	font_render_string_center (&font_fixed6, 64, 10, "KICKBACK ON");
 	dmd_show_low ();
 	task_sleep_sec (1);
 	deff_exit ();
@@ -461,6 +430,21 @@ void wp5xpf_running_deff (void)
 		font_render_string_center (&font_var5, 64, 5, "5X SCORE");
 		sprintf_current_score ();
 		font_render_string_center (&font_fixed6, 64, 16, sprintf_buffer);
+		dmd_show_low ();
+		task_sleep (TIME_200MS);
+	}
+}
+
+
+void wp5xpf_running2_deff (void)
+{
+	for (;;)
+	{
+		dmd_alloc_low_clean ();
+		font_render_string_center (&font_var5, 64, 5, "COLLECT HAZARDS");
+		sprintf_current_score ();
+		font_render_string_center (&font_fixed6, 64, 16, sprintf_buffer);
+		font_render_string_center (&font_var5, 64, 24, "UP TO 5M EACH");
 		dmd_show_low ();
 		task_sleep (TIME_200MS);
 	}
@@ -545,7 +529,7 @@ void combo4_deff (void)
 	deff_exit ();
 }
 
-void map_start_deff (void)
+void map_intro_deff (void)
 {
 	dmd_alloc_low_clean ();
 	font_render_string_center (&font_fixed6, 64, 10, "FIND BIGFOOT");
@@ -583,7 +567,7 @@ void map_cow_deff (void)
 	deff_exit ();
 }
 
-void wiz_start_deff (void)
+void wiz_intro_deff (void)
 {
 	dmd_alloc_low_clean ();
 	font_render_string_center (&font_fixed10, 64, 16, "WIZARD MB");
@@ -634,14 +618,6 @@ void hz2_deff (void)
 	deff_exit ();
 }
 
-void hz3_deff (void)
-{
-	dmd_alloc_low_clean ();
-	font_render_string_center (&font_fixed6, 64, 16, "NO WAY OUT");
-	dmd_show_low ();
-	task_sleep_sec (1);
-	deff_exit ();
-}
 
 void hz4_deff (void)
 {
@@ -664,9 +640,16 @@ void hz5_deff (void)
 void hz6_deff (void)
 {
 	dmd_alloc_low_clean ();
-	font_render_string_center (&font_fixed6, 64, 16, "INSANITY FALLS");
+	font_render_string_center (&font_fixed6, 64, 10, "INSANITY FALLS");
 	sprintf ("%d FALLS", shots_falls);
-	font_render_string_center (&font_var5, 64, 28, sprintf_buffer);
+	font_render_string_center (&font_var5, 64, 20, sprintf_buffer);
+
+	//ramp scores 50K * skillshot made
+	if (skill_ramp_made > 1)
+	{
+		sprintf ("%dK", skill_ramp_made *50);
+		font_render_string_center (&font_var5, 64, 28, sprintf_buffer);
+	}
 
 	dmd_show_low ();
 	task_sleep_sec (1);
@@ -677,6 +660,11 @@ void hz7_deff (void)
 {
 	dmd_alloc_low_clean ();
 	font_render_string_center (&font_fixed6, 64, 16, "BIGFOOT");
+	if (skill_bigf_made > 1)
+	{
+		sprintf ("%dK", skill_bigf_made *50);
+		font_render_string_center (&font_var5, 64, 28, sprintf_buffer);
+	}
 	dmd_show_low ();
 	task_sleep_sec (1);
 	deff_exit ();
@@ -701,27 +689,49 @@ void skill_running_deff (void)
 		font_render_string_center (&font_var5, 64, 26, "FOR JACKPOT");
 		dmd_show_low ();
 		task_sleep_sec (1);
+/*  quickmb removed TODO cleanup
 		dmd_alloc_low_clean ();
 		font_render_string_center (&font_fixed6, 64, 4, "SKILL SHOT");
 		font_render_string_center (&font_var5, 64, 18, "SHOOT NO WAY OUT");
 		font_render_string_center (&font_var5, 64, 26, "FOR QUICK MULTIBALL");
 		dmd_show_low ();
 		task_sleep_sec (1);
-	}
+*/
+		}
 }
 
-void skill_deff (void)
+void skill_ramp_deff (void)
 {
 	dmd_alloc_low_clean ();
-	font_render_string_center (&font_fixed6, 64, 10, "SKILL SHOT");
-	printf_millions (skill_made);
-	font_render_string_center (&font_fixed6, 64, 21, sprintf_buffer);
+	font_render_string_center (&font_fixed6, 64, 4, "SKILL SHOT");
+	
+	if (skill_count == 9)
+		printf_millions (20);
+	else
+		printf_millions (skill_count * 2);
+	
+	font_render_string_center (&font_fixed6, 64, 14, sprintf_buffer);
+	sprintf ("FALLS NOW %dK", skill_ramp_made *50);
+	font_render_string_center (&font_var5, 64, 24, sprintf_buffer);
 	dmd_show_low ();
 	task_sleep_sec (1);
 	deff_exit ();
 }
 
-void fall_nok_deff (void)
+void skill_bigf_deff (void)
+{
+	dmd_alloc_low_clean ();
+	font_render_string_center (&font_fixed6, 64, 4, "SKILL SHOT");
+	printf_millions (skill_bigf_made -1);
+	font_render_string_center (&font_fixed6, 64, 14, sprintf_buffer);
+	sprintf ("BIGFOOT NOW %dK", skill_bigf_made *50);
+	font_render_string_center (&font_var5, 64, 24, sprintf_buffer);
+	dmd_show_low ();
+	task_sleep_sec (1);
+	deff_exit ();
+}
+
+/* void fall_nok_de-- (void)
 {
 	dmd_alloc_low_clean ();
 	font_render_string_center (&font_fixed6, 64, 16, "OVER FALLS");
@@ -729,4 +739,44 @@ void fall_nok_deff (void)
 	task_sleep_sec (1);
 	deff_exit ();
 }
+*/
+
+void wpmano_intro_deff (void)
+{
+	dmd_alloc_low_clean ();
+	font_render_string_center (&font_fixed6, 64, 16, "MAN OVERBOARD");
+	dmd_show_low ();
+	task_sleep_sec (1);
+	deff_exit ();
+}
+
+void wp5x_intro_deff (void)
+{
+	dmd_alloc_low_clean ();
+	font_render_string_center (&font_fixed6, 64, 16, "5M HAZARD MODE");
+	dmd_show_low ();
+	task_sleep_sec (1);
+	deff_exit ();
+}
+
+void eb_score_deff (void)
+{
+	dmd_alloc_low_clean ();
+	font_render_string_center (&font_fixed6, 64, 14, "EXTRA BALL");
+	font_render_string_center (&font_var5, 64, 26, "1 M");
+	dmd_show_low ();
+	task_sleep_sec (1);
+	deff_exit ();
+}
+
+void dam_ok_deff (void)
+{
+	dmd_alloc_low_clean ();
+	font_render_string_center (&font_fixed6, 64, 14, "BROKE DAM");
+	font_render_string_center (&font_var5, 64, 26, "10 M");
+	dmd_show_low ();
+	task_sleep_sec (1);
+	deff_exit ();
+}
+
 

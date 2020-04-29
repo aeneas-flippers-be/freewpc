@@ -23,7 +23,7 @@ Handle bigfoot diverter
 
 if whirlpool mode qualified => divert, red light on
 no wp qual but bigfoot qual => don't divert, red light flashing
-nothing qual => no light, no divert
+nothing qual => no light, no divert, ball goes further to bigfoot cave
 
 enable div solenoid and disable after 3 seconds / tilt/endball/.. make sure to always disable !
 
@@ -40,13 +40,14 @@ switch:
 
 #include <freewpc.h>
 #include <bigfdiv.h>
+#include <status.h>
 //#include <bigfhead.h>
 
 
 void bfdiv_divert (void)
 {
 	bigfdiv_start ();
-	bfh_showface_ccw ();
+//	bfh_showface_ccw ();
 	leff_start (LEFF_FL_BIGFOOT);
 	callset_invoke (wpool_enter);
 }
@@ -54,13 +55,10 @@ void bfdiv_divert (void)
 
 CALLSET_ENTRY (bfdiv, lamp_update)
 {
-//	if (multi_ball_play ())
-//		return;
-
 	if (!global_flag_test (GLOBAL_FLAG_RAFTMODE))
 		return;
 
-	if (global_flag_test (GLOBAL_FLAG_WPOOLLIT) || flag_test (FLAG_DAM_LIT))
+	if (global_flag_test (GLOBAL_FLAG_WPOOLLIT))
 		lamp_tristate_on (LM_LIGHT_WHIRLPOOL);
 	else if (global_flag_test (GLOBAL_FLAG_BIGFOOTLIT))
 		lamp_tristate_flash (LM_LIGHT_WHIRLPOOL);
@@ -68,9 +66,10 @@ CALLSET_ENTRY (bfdiv, lamp_update)
 		lamp_tristate_off (LM_LIGHT_WHIRLPOOL);
 }
 
+
 CALLSET_ENTRY (bfdiv, sw_canyon_entrance)
 {
-	if (global_flag_test (GLOBAL_FLAG_WPCH_RUNNING) || global_flag_test (GLOBAL_FLAG_WPOOLLIT))
+	if (global_flag_test (GLOBAL_FLAG_WPOOLLIT) || global_flag_test (GLOBAL_FLAG_WPCH_RUNNING))
 	{
 		bfdiv_divert ();
 	}
@@ -81,4 +80,19 @@ CALLSET_ENTRY (bfdiv, tilt, end_game, end_ball)
 	bigfdiv_stop ();
 }
 
+CALLSET_ENTRY (bfdiv, status_report)
+{
+	status_page_init ();
+
+	font_render_string (&font_mono5, 2, 2, "BIGFOOT");
+
+	if (global_flag_test (GLOBAL_FLAG_WPOOLLIT))
+		font_render_string_center (&font_mono5, 64, 10, "WPOOL LIT");
+//	if (flag_test (FLAG_DAM_LIT))
+//		font_render_string_center (&font_mono5, 64, 18, "DAM LIT");
+	if (global_flag_test (GLOBAL_FLAG_BIGFOOTLIT))
+		font_render_string_center (&font_mono5, 64, 26, "CAVE LIT");
+
+	status_page_complete ();
+}
 

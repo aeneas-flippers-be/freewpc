@@ -33,8 +33,6 @@ Rules:
 U8 mball_jackpot_level;
 
 bool mball_addjp;
-bool mball_2bankup;
-bool mball_2banklow;
 bool mball_bigfootjp;
 bool mball_skillock;
 bool mball_jpscored;
@@ -63,6 +61,7 @@ void mb_jackpot_collected_deff (void)
 void mball_score_bfjackpot (void)
 {
 	mball_bigfootjp = FALSE;
+	lamp_tristate_off (LM_UPF_BIGFOOT_JP);
 	mball_jpscored = TRUE;
 	score (SC_10M);
 	speech_start (SND_BF1, SL_3S);
@@ -74,6 +73,8 @@ void mball_score_jackpot (void)
 	mball_jpscored = TRUE;
 	if (mball_addjp)
 		bounded_increment (mball_jackpot_level, 3);
+
+	leff_start (LEFF_FL_PF_RTOL);
 
 	if (global_flag_test (GLOBAL_FLAG_WP5X_RUNNING))
 	{
@@ -104,25 +105,12 @@ void mball_score_jackpot (void)
 }
 
 
-void mball_check_bigfootjp (void)
-{
-	if (mball_2bankup && mball_2banklow)
-	{
-		mball_bigfootjp = TRUE;
-		mball_2bankup = FALSE;
-		mball_2banklow = FALSE;
-		speech_start (SND_HEADFORBIGFOOTBLUFF, SL_4S);
-	}
-}
-
 void mball_stop (void)
 {
 	global_flag_off (GLOBAL_FLAG_MBALL_RUNNING);
 	deff_stop (DEFF_MB_RUNNING);
 
 	mball_addjp = FALSE;
-	mball_2bankup = FALSE;
-	mball_2banklow = FALSE;
 	mball_bigfootjp = FALSE;
 	mball_restart_mode = FALSE;
 
@@ -131,14 +119,13 @@ void mball_stop (void)
 
 	lamp_tristate_off (LM_UPF_MULTI_JP);
 	lamp_tristate_off (LM_UPF_BIGFOOT_JP);
-	lamp_tristate_off (LM_2BANK_UP);
-	lamp_tristate_off (LM_2BANK_LOW);
-	global_flag_on (GLOBAL_FLAG_RAFTMODE);
+
+	raftmode_on ();
 }
 
 void mball_jptask (void)
 {
-	task_sleep_sec (4);
+	task_sleep_sec (2);
 	mball_addjp = FALSE;
 	if (mball_jackpot_level == 0)
 		mball_jackpot_level = 1;
@@ -147,37 +134,43 @@ void mball_jptask (void)
 
 void mball_start (void)
 {
-	global_flag_off (GLOBAL_FLAG_RAFTMODE);
-	deff_start (DEFF_MB_START);
+//	raftmode_off ();
+	leff_start (LEFF_FL_ALL_PF_LOOP);
 	speech_start (SND_WWATER, SL_3S);
+	deff_start_sync (DEFF_MB_INTRO);
 
 	mball_jackpot_level = 0;
-	mball_2bankup = FALSE;
-	mball_2banklow = FALSE;
 	mball_bigfootjp = FALSE;
 	mball_addjp = TRUE;
 	mball_jpscored = FALSE;
+	mball_restart_mode = FALSE;
 
-	lamp_tristate_off (LM_2BANK_UP);
-	lamp_tristate_off (LM_2BANK_LOW);
-	lamp_tristate_off (LM_UPF_MULTI_JP);
+	bftgt_reset ();
+
+	lamp_tristate_on (LM_UPF_MULTI_JP);
 	lamp_tristate_off (LM_UPF_BIGFOOT_JP);
 
-	lamp_tristate_off (LM_LOCK_1);
-	lamp_tristate_off (LM_LOCK_2);
-	lamp_tristate_off (LM_LOCK_3);
-	lamp_tristate_off (LM_LOCK_LEFT);
-	lamp_tristate_off (LM_LOCK_RIGHT);
+	lamp_tristate_flash (LM_2BANK_UP);
+	lamp_tristate_flash (LM_2BANK_LOW);
+
+
+	lock_lamps_off ();
+//	lamp_tristate_off (LM_LOCK_1);
+//	lamp_tristate_off (LM_LOCK_2);
+//	lamp_tristate_off (LM_LOCK_3);
+//	lamp_tristate_off (LM_LOCK_LEFT);
+//	lamp_tristate_off (LM_LOCK_RIGHT);
 
 	leff_start (LEFF_RAFTLOOP);
 
-	task_sleep_sec (1);
+//	task_sleep_sec (1);
 
-	while (deff_get_active() == DEFF_MB_START) 
-	{
-		task_sleep (TIME_100MS);
-	}
+//	while (deff_get_active() == DEFF_MB_START) 
+//	{
+//		task_sleep (TIME_100MS);
+//	}
 
+	leff_stop (LEFF_FL_ALL_PF_LOOP);
 	global_flag_on (GLOBAL_FLAG_MBALL_RUNNING);
 	lock_unlockball ();
 	task_sleep_sec (1);	
@@ -207,6 +200,18 @@ void mball_relock (void)
 	task_create_gid1 (GID_RELOCK, mball_relock_task);
 }
 
+
+
+CALLSET_ENTRY (mball, bigftgt_completed)
+{
+	if (global_flag_test (GLOBAL_FLAG_MBALL_RUNNING) && !mball_restart_mode)
+	{
+		mball_bigfootjp = TRUE;
+		lamp_tristate_flash (LM_UPF_BIGFOOT_JP);
+		speech_start (SND_HEADFORBIGFOOTBLUFF, SL_4S);
+	}
+}
+
 CALLSET_ENTRY (mball, sw_rapids_main_ramp)
 {
 	if (global_flag_test (GLOBAL_FLAG_MBALL_RUNNING) && !mball_restart_mode)
@@ -217,84 +222,37 @@ CALLSET_ENTRY (mball, sw_rapids_main_ramp)
 
 CALLSET_ENTRY (mball, sw_canyon_main)
 {
-	if (global_flag_test (GLOBAL_FLAG_MBALL_RUNNING) && !mball_restart_mode)
-	{
-		if (mball_bigfootjp)
+	if (global_flag_test (GLOBAL_FLAG_MBALL_RUNNING) && !mball_restart_mode && mball_bigfootjp)
 			mball_score_bfjackpot ();
-	}
 }
 
-CALLSET_ENTRY (mball, sw_2bank_up)
-{
-	if (global_flag_test (GLOBAL_FLAG_MBALL_RUNNING) && !mball_restart_mode)
-	{
-		mball_2bankup = TRUE;
-		mball_check_bigfootjp ();
-	}
-}
-
-CALLSET_ENTRY (mball, sw_2bank_low)
-{
-	if (global_flag_test (GLOBAL_FLAG_MBALL_RUNNING) && !mball_restart_mode)
-	{
-		mball_2banklow = TRUE;
-		mball_check_bigfootjp ();
-	}
-}
-
-CALLSET_ENTRY (mball, any_pf_switch)
-{
-	if (global_flag_test (GLOBAL_FLAG_MBALL_RUNNING) && !mball_restart_mode)
-	{
-		score (SC_20K);
-	}
-}
 
 //test for relock shot
-CALLSET_ENTRY (mball, dev_lock_enter)
+//ALLSET_ENTRY (mball, dev_lock_enter)
+/*
 {
 	if (global_flag_test (GLOBAL_FLAG_MBALL_RUNNING) && mball_restart_mode)
 	{
 		task_kill_gid (GID_RELOCK);
-		device_lock_ball (device_entry (DEVNO_LOCK));
+//		device_lock_ball (device_entry (DEVNO_LOCK));
 		mball_restart_mode = FALSE;
 		speech_start (SND_WWGREATSHOT, SL_3S);
 		leff_stop (LEFF_SKILLLOCK);
 		deff_start (DEFF_MB_RELOCKED);
 
+		//release ball from plunger and wait until it's shot on the playfield
 		global_flag_on (GLOBAL_FLAG_BALL_AT_PLUNGER);
-		device_unlock_ball (device_entry (DEVNO_TROUGH));
-//		sol_request (SOL_BALL_RELEASE);
+		sol_request (SOL_BALL_RELEASE);
 
 		while (global_flag_test (GLOBAL_FLAG_BALL_AT_PLUNGER))
 		{
 			task_sleep (TIME_100MS);
 		}
-		device_unlock_ball (device_entry (DEVNO_LOCK));
+		task_sleep (TIME_500MS); //wait until kicking ball out
 	}
 }
+*/
 
-
-CALLSET_ENTRY (mball, lamp_update)
-{
-	if (global_flag_test (GLOBAL_FLAG_MBALL_RUNNING))
-	{
-		lamp_tristate_on (LM_UPF_MULTI_JP);
-
-		if (mball_2bankup)
-			lamp_tristate_on (LM_2BANK_UP);
-		else
-			lamp_tristate_flash (LM_2BANK_UP);
-
-		if (mball_2banklow)
-			lamp_tristate_on (LM_2BANK_LOW);
-		else
-			lamp_tristate_flash (LM_2BANK_LOW);
-
-		if (mball_bigfootjp)
-			lamp_tristate_on (LM_UPF_BIGFOOT_JP);
-	}
-}
 
 CALLSET_ENTRY (mball, display_update)
 {
@@ -333,7 +291,7 @@ CALLSET_ENTRY (mball, single_ball_play)
 	}
 }
 
-CALLSET_ENTRY (mball, end_ball)
+CALLSET_ENTRY (mball, end_ball, tilt)
 {
 	if (global_flag_test (GLOBAL_FLAG_MBALL_RUNNING))
 	{
@@ -341,12 +299,4 @@ CALLSET_ENTRY (mball, end_ball)
 	}
 }
 
-CALLSET_ENTRY (mball, start_player)
-{
-	mball_addjp = FALSE;
-	mball_2bankup = FALSE;
-	mball_2banklow = FALSE;
-	mball_bigfootjp = FALSE;
-	mball_restart_mode = FALSE;
-}
 

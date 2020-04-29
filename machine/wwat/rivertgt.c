@@ -19,28 +19,41 @@
  */
 
 /*
+RIVERTGT.C
 Spell river by hitting blue targets
-lit inlanes spot next available river letter
+Lit inlanes spot next available river letter
 Light whirlpool when river is spelled
 
-lamps:
-21: river r1, blue
-22: river i, blue
-23: river v, blue
-24: river e, blue
-25: river r2, blue
-LAMPLIST_RIVER
-
-sw:
-31: River R2, ingame, standup
-32: River E, ingame, standup
-33: River V, ingame, standup
-34: River I, ingame, standup
-35: River R1, ingame, standup
 */
 
 #include <freewpc.h>
 
+
+void river_lamps_off (void)
+{
+	if (!global_flag_test (GLOBAL_FLAG_HURRY_RUNNING))
+	{
+		lamp_off (LM_RIVER_R1);
+		lamp_off (LM_RIVER_R2);
+		lamp_off (LM_RIVER_I);
+		lamp_off (LM_RIVER_V);
+		lamp_off (LM_RIVER_E);
+	}
+}
+
+void river_lamps_on (void)
+{
+	if (global_flag_test (GLOBAL_FLAG_RIVERR1))
+		lamp_on (LM_RIVER_R1);
+	if (global_flag_test (GLOBAL_FLAG_RIVERR2))
+		lamp_on (LM_RIVER_R2);
+	if (global_flag_test (GLOBAL_FLAG_RIVERI))
+		lamp_on (LM_RIVER_I);
+	if (global_flag_test (GLOBAL_FLAG_RIVERV))
+		lamp_on (LM_RIVER_V);
+	if (global_flag_test (GLOBAL_FLAG_RIVERE))
+		lamp_on (LM_RIVER_E);
+}
 
 void river_off (void)
 {
@@ -49,55 +62,40 @@ void river_off (void)
 	global_flag_off (GLOBAL_FLAG_RIVERI);
 	global_flag_off (GLOBAL_FLAG_RIVERV);
 	global_flag_off (GLOBAL_FLAG_RIVERE);
-	lamp_tristate_off (LM_RIVER_R1);
-	lamp_tristate_off (LM_RIVER_R2);
-	lamp_tristate_off (LM_RIVER_I);
-	lamp_tristate_off (LM_RIVER_V);
-	lamp_tristate_off (LM_RIVER_E);
+
+	river_lamps_off ();
 }
 
-void river_check (void)
+
+void river_check (void)	//check if river spelled complete
 {
 	score (SC_20K);
+	flasher_pulse (FLASH_INSANITY_FALLS_FL);
 
 	if (global_flag_test (GLOBAL_FLAG_RIVERR1) && global_flag_test (GLOBAL_FLAG_RIVERR2) && global_flag_test (GLOBAL_FLAG_RIVERI)
 		&& global_flag_test (GLOBAL_FLAG_RIVERV) && global_flag_test (GLOBAL_FLAG_RIVERE))
 	{
-		global_flag_on (GLOBAL_FLAG_WPOOLLIT);
+		global_flag_on (GLOBAL_FLAG_WPOOLLIT);	// RULE enable wpool mode
 		
-		lamplist_apply (LAMPLIST_RIVER, lamp_off);
-		task_sleep (TIME_100MS);
-		lamplist_apply (LAMPLIST_RIVER, lamp_on);
-		task_sleep (TIME_100MS);
-		lamplist_apply (LAMPLIST_RIVER, lamp_off);
 		sound_start (ST_SAMPLE, SND_OK_2, SL_3S, PRI_GAME_QUICK3);
-		deff_start (DEFF_RIVER_COMPLETE);
+		if (!global_flag_test (GLOBAL_FLAG_HURRY_RUNNING) && !global_flag_test (GLOBAL_FLAG_DAM_RUNNING))
+			deff_start (DEFF_RIVER_COMPLETE);
 		river_off ();
+		flasher_pulse (FLASH_INSANITY_FALLS_FL);
 	}
 	else
-		deff_start (DEFF_RIVERLETTER);
+		if (!global_flag_test (GLOBAL_FLAG_HURRY_RUNNING) && !global_flag_test (GLOBAL_FLAG_DAM_RUNNING))
+		{
+			river_lamps_on ();
+			deff_start (DEFF_RIVERLETTER);
+		}
 }
 
-CALLSET_ENTRY (rivertgt, lamp_update)
-{
-	if (global_flag_test (GLOBAL_FLAG_HURRY_RUNNING) || global_flag_test (GLOBAL_FLAG_PF_LAMPS_OFF) || !global_flag_test (GLOBAL_FLAG_RAFTMODE))
-		return;
-
-	if (global_flag_test (GLOBAL_FLAG_RIVERR1))
-		lamp_tristate_on (LM_RIVER_R1);
-	if (global_flag_test (GLOBAL_FLAG_RIVERR2))
-		lamp_tristate_on (LM_RIVER_R2);
-	if (global_flag_test (GLOBAL_FLAG_RIVERI))
-		lamp_tristate_on (LM_RIVER_I);
-	if (global_flag_test (GLOBAL_FLAG_RIVERV))
-		lamp_tristate_on (LM_RIVER_V);
-	if (global_flag_test (GLOBAL_FLAG_RIVERE))
-		lamp_tristate_on (LM_RIVER_E);
-}
-
+//spot river letter from inlane - find next available letter
 CALLSET_ENTRY (rivertgt, spot_river_letter)
 {
-	if (!global_flag_test (GLOBAL_FLAG_RAFTMODE) || global_flag_test (GLOBAL_FLAG_HURRY_RUNNING))
+	if (!global_flag_test (GLOBAL_FLAG_RAFTMODE) || global_flag_test (GLOBAL_FLAG_HURRY_RUNNING) 
+		|| global_flag_test (GLOBAL_FLAG_DAM_RUNNING))
 		return;
 
 //	sound_start (ST_SAMPLE, SND_SPLASH_6, SL_3S, PRI_GAME_QUICK3);
@@ -114,53 +112,69 @@ CALLSET_ENTRY (rivertgt, spot_river_letter)
 		callset_invoke (sw_river_r2);
 }
 
+
+CALLSET_ENTRY (rivertgt, raft_lamps_off)
+{
+	river_lamps_off ();
+}
+
+CALLSET_ENTRY (rivertgt, raft_lamps_on)
+{
+	if (global_flag_test (GLOBAL_FLAG_HURRY_RUNNING) || !global_flag_test (GLOBAL_FLAG_RAFTMODE))
+		return;
+	
+	river_lamps_on ();
+}
+
+
+
 CALLSET_ENTRY (rivertgt, sw_river_r1)
 {
-	if (global_flag_test (GLOBAL_FLAG_HURRY_RUNNING) || !global_flag_test (GLOBAL_FLAG_RAFTMODE) || global_flag_test (GLOBAL_FLAG_RIVERR1))
+	if (!global_flag_test (GLOBAL_FLAG_RAFTMODE) || global_flag_test (GLOBAL_FLAG_RIVERR1))
 		return;
 
 	global_flag_on (GLOBAL_FLAG_RIVERR1);
-	lamp_tristate_on (LM_RIVER_R1);
+//	lamp_on (LM_RIVER_R1);
 	river_check ();
 }
 
 CALLSET_ENTRY (rivertgt, sw_river_r2)
 {
-	if (global_flag_test (GLOBAL_FLAG_HURRY_RUNNING) || !global_flag_test (GLOBAL_FLAG_RAFTMODE) || global_flag_test (GLOBAL_FLAG_RIVERR2))
+	if (!global_flag_test (GLOBAL_FLAG_RAFTMODE) || global_flag_test (GLOBAL_FLAG_RIVERR2))
 		return;
 
 	global_flag_on (GLOBAL_FLAG_RIVERR2);
-	lamp_tristate_on (LM_RIVER_R2);
+//	lamp_on (LM_RIVER_R2);
 	river_check ();
 }
 
 CALLSET_ENTRY (rivertgt, sw_river_i)
 {
-	if (global_flag_test (GLOBAL_FLAG_HURRY_RUNNING) || !global_flag_test (GLOBAL_FLAG_RAFTMODE) || global_flag_test (GLOBAL_FLAG_RIVERI))
+	if (!global_flag_test (GLOBAL_FLAG_RAFTMODE) || global_flag_test (GLOBAL_FLAG_RIVERI))
 		return;
 
 	global_flag_on (GLOBAL_FLAG_RIVERI);
-	lamp_tristate_on (LM_RIVER_I);
+//	lamp_on (LM_RIVER_I);
 	river_check ();
 }
 
 CALLSET_ENTRY (rivertgt, sw_river_v)
 {
-	if (global_flag_test (GLOBAL_FLAG_HURRY_RUNNING) || !global_flag_test (GLOBAL_FLAG_RAFTMODE) || global_flag_test (GLOBAL_FLAG_RIVERV))
+	if (!global_flag_test (GLOBAL_FLAG_RAFTMODE) || global_flag_test (GLOBAL_FLAG_RIVERV))
 		return;
 
 	global_flag_on (GLOBAL_FLAG_RIVERV);
-	lamp_tristate_on (LM_RIVER_V);
+//	lamp_on (LM_RIVER_V);
 	river_check ();
 }
 
 CALLSET_ENTRY (rivertgt, sw_river_e)
 {
-	if (global_flag_test (GLOBAL_FLAG_HURRY_RUNNING) || !global_flag_test (GLOBAL_FLAG_RAFTMODE) || global_flag_test (GLOBAL_FLAG_RIVERE))
+	if (!global_flag_test (GLOBAL_FLAG_RAFTMODE) || global_flag_test (GLOBAL_FLAG_RIVERE))
 		return;
 
 	global_flag_on (GLOBAL_FLAG_RIVERE);
-	lamp_tristate_on (LM_RIVER_E);
+//	lamp_on (LM_RIVER_E);
 	river_check ();
 }
 

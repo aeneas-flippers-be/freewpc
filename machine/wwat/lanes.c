@@ -19,6 +19,7 @@
  */
 
 /*
+MOVE INLANE/OUTLANE lamps with the flipper buttons
 lamps
 13: left outlane, white
 14: left inlane, red
@@ -35,7 +36,7 @@ sw
 
 #include <freewpc.h>
 
-
+//MOVE lamp with flipper buttons
 CALLSET_ENTRY (lanes, sw_left_button)
 {
 	if (in_game)
@@ -49,38 +50,51 @@ CALLSET_ENTRY (lanes, sw_right_button)
 }
 
 
+//OUTLANES score when lit
 CALLSET_ENTRY (lanes, sw_kickback)
 {
 	if (lamp_test (LM_LEFT_OUTLANE))
 		score (SC_250K);
+	else
+		score (SC_25K);
 }
 
 CALLSET_ENTRY (lanes, sw_right_outlane)
 {
 	if (lamp_test (LM_RIGHT_OUTLANE))
 		score (SC_250K);
+	else
+		score (SC_25K);
 
-	sound_start (ST_SAMPLE, SND_BAD_1, SL_4S, PRI_GAME_QUICK3);
+	sound_start (ST_SAMPLE, SND_BAD_1, SL_4S, PRI_GAME_QUICK3); //sound when draining ball
 }
 
+
+//INLANES spot river letter when lit
 CALLSET_ENTRY (lanes, sw_left_inlane)
 {
 	if (lamp_test (LM_LEFT_INLANE))
 	{
-		score (SC_250K);
+//		score (SC_250K);
 		callset_invoke (spot_river_letter);
 	}
+	else
+		score (SC_10K);
 }
 
 CALLSET_ENTRY (lanes, sw_right_inlane)
 {
 	if (lamp_test (LM_RIGHT_INLANE))
 	{
-		score (SC_250K);
+//		score (SC_250K);
 		callset_invoke (spot_river_letter);
 	}
+	else
+		score (SC_10K);
+
 }
 
+//reset at ball start
 CALLSET_ENTRY (lanes, start_ball)
 {
 	lamplist_apply (LAMPLIST_LANES, lamp_off);

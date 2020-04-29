@@ -19,6 +19,8 @@
  */
 
 /* 
+DELETED FROM CODE - DO NOT USE ANYMORE
+
 mapmode search bigfoot
 - qualified when map award given in cave, start in whirlpool
 
@@ -27,66 +29,46 @@ mapmode search bigfoot
  */
 
 #include <freewpc.h>
-#include <bigfhead.h>
+//#include <bigfhead.h>
 #include "mapmode.h"
 
 
 U8 map_shotcount;
-U8 map_currentpos[6];
+U8 map_currentpos;
 U8 map_goalpos;
 
 void map_running_deff (void)
 {
-//draw 5 lines, update for each shot
-
-	U8 i;
-//	U8 line;
-
 	for (;;)
 	{
-//		if (score_update_required ())
-//		{
-			dmd_alloc_pair ();
-			frame_draw (IMG_MAPMODE);
-			bitmap_blit2 (smcave_bits, (map_goalpos * 17 + 5) ,5);
+		dmd_alloc_low_clean();
+		frame_draw (IMG_MAPMODE);
+		bitmap_blit (smcave_bits, (map_goalpos * 17 + 5) ,2);
 
-			if (map_shotcount > 0)
-			{
-				for (i = 1; i < 6; i++)
-				{
-//					line = 120- (i*5);
-					if (map_currentpos[i] > 0)
-					{
-						bitmap_blit2 (smallx_bits, (map_goalpos * 17 + 5) , 120-(i*5));
-					}
-				}
-			}
+		if (map_shotcount > 0)
+		{
+			bitmap_blit (smallx_bits, (map_currentpos * 17 + 5) , 120-(map_shotcount*5));
+		}
 
-			dmd_show2 ();
-			task_sleep (TIME_100MS);
-//		}
-		task_sleep (TIME_100MS);
+		dmd_show_low ();
+		task_sleep (TIME_200MS);
 	}
 }
 
 
 void map_start (void)
 {
-	global_flag_off (GLOBAL_FLAG_RAFTMODE);
-	deff_start (DEFF_MAP_START);
+	raftmode_off ();
+//	bigfhead_go_front_cw ();
 	speech_start (SND_WHICHWAYGO, SL_3S);
+	deff_start_sync (DEFF_MAP_INTRO);
+	task_sleep_sec (1);
 
 	map_shotcount = 0;
-	map_currentpos[0] = 6;  // start in center
-	map_currentpos[1] = 0;
-	map_currentpos[2] = 0;
-	map_currentpos[3] = 0;
-	map_currentpos[4] = 0;
-	map_currentpos[5] = 0;
+	map_currentpos = 6;  // start in center
 
 	map_goalpos = random_scaled(5) +1;  //rigged so we don't take extreme left or right corner
 
-	lamps_out ();
 	lamplist_apply (LAMPLIST_HAZARDS, lamp_off);
 
 	lamp_tristate_flash (LM_HZ_BOULDER_GARDEN);
@@ -95,9 +77,8 @@ void map_start (void)
 
 	flag_on (FLAG_MAPPLAYED);
 
-	bigfhead_go_cw_front ();
 
-	task_sleep_sec (2);
+//	task_sleep_sec (2);
 	speech_start (SND_HERESMAP, SL_3S);
 	task_sleep_sec (2);
 	global_flag_on (GLOBAL_FLAG_MAP_RUNNING);
@@ -114,10 +95,10 @@ void map_stop (void)
 	lamp_tristate_off (LM_HZ_NO_WAY_OUT);
 	lamp_tristate_off (LM_HZ_BOOM_BEND);
 
-	bigfhead_go_cw_back ();
+//	bigfhead_go_back_cw ();
 
 	global_flag_off (GLOBAL_FLAG_MAP_RUNNING);
-	global_flag_on (GLOBAL_FLAG_RAFTMODE);
+	raftmode_on ();
 }
 
 
@@ -127,25 +108,25 @@ void map_shotmade (U8 shot)
 	map_shotcount++;
 	if (shot == 1)
 	{
-		map_currentpos[map_shotcount] = map_currentpos[map_shotcount-1] -1;
-		bigfhead_bump_cw ();
+		map_currentpos--;
+//		bigfhead_bump_cw ();
 
 	}
 	else if (shot == 5)
 	{
-		map_currentpos[map_shotcount] = map_currentpos[map_shotcount-1] +1;
-		bigfhead_bump_ccw ();
+		map_currentpos++;
+//		bigfhead_bump_ccw ();
 	} 
 	else if (shot == 3)
 	{
-		map_currentpos[map_shotcount] = map_currentpos[map_shotcount-1] + random_scaled(1);  //go random left/right
+		map_currentpos = map_currentpos + random_scaled(1);  //go random left/right
 	}
 
 	score_update_request ();
 
 	if (map_shotcount == 5)
 	{
-		if (map_currentpos[map_shotcount] == map_goalpos)
+		if (map_currentpos == map_goalpos)
 		{
 			sound_start (ST_SAMPLE, SND_OK_6, SL_3S, PRI_GAME_QUICK3);
 			score (SC_1M);
@@ -153,7 +134,7 @@ void map_shotmade (U8 shot)
 			task_sleep (TIME_500MS);
 			deff_start (DEFF_MAP_FOUND);
 		}
-		else if (map_currentpos[map_shotcount] == 1)
+		else if (map_currentpos == 1)
 		{
 			sound_start (ST_SAMPLE, SND_COW, SL_3S, PRI_GAME_QUICK3);
 			score (SC_1M);
@@ -169,9 +150,9 @@ void map_shotmade (U8 shot)
 	}
 	else
 	{
-		if (map_goalpos +1 >= map_currentpos[map_shotcount])
+		if (map_goalpos +1 >= map_currentpos)
 		{
-			map_diff = map_goalpos +2 - map_currentpos[map_shotcount];
+			map_diff = map_goalpos +2 - map_currentpos;
 			if (map_diff <= 3)
 				speech_start (SND_NICEMOVE, SL_3S);
 			else
@@ -263,15 +244,9 @@ CALLSET_ENTRY (map, start_player)
 //  x x x x x 
 //   x x x x
 //    x x x
-	map_currentpos[0] = 3;  // start in center 0based
-	map_currentpos[1] = 0;
-	map_currentpos[2] = 0;
-	map_currentpos[3] = 0;
-	map_currentpos[4] = 0;
-	map_currentpos[5] = 0;
 }
 
-CALLSET_ENTRY (map, end_ball)
+CALLSET_ENTRY (map, end_ball, tilt)
 {
 	if (global_flag_test (GLOBAL_FLAG_MAP_RUNNING))
 	{

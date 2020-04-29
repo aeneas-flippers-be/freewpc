@@ -19,21 +19,24 @@
  */
 
 /*
-hit enough jets to advance riverclass and thus bonus multiplier
+JETS.C
+hit enough jets to advance riverclass and thus bonus multiplier - runs always, also during mballs
 play sound in regular mode
 play moo in cow mode
-play money sound in bouldergarden frenzy mode
+play money sound in goldrush mode
 
 */
 
 #include <freewpc.h>
 #include <status.h>
 
-extern U8 riverclass;
 extern U8 caveshots;
+extern U8 jets_extra_hit;
+extern U8 riverclass;
+
+
 
 __local__ U8 jets_hit;
-U8 jets_extra_hit;
 U8 jets_sound_index;
 
 sound_code_t jet_sounds[18] = {
@@ -45,7 +48,12 @@ sound_code_t jet_coin_sounds[12] = {SND_BGARDEN_COIN_1, SND_BGARDEN_COIN_2, SND_
 SND_BGARDEN_COIN_4, SND_BGARDEN_COIN_5, SND_BGARDEN_COIN_6, SND_BGARDEN_COIN_7, SND_BGARDEN_COIN_8, 
 SND_BGARDEN_COIN_9, SND_BGARDEN_COIN_10, SND_BGARDEN_COIN_11, SND_BGARDEN_COIN_12};
 
+
+//RULE: how many to increment riverclass
 const U8 jets_needed[] = {10, 20, 35, 50, 75, 100};
+
+
+
 
 void jet_hit_deff (void)
 {
@@ -60,7 +68,7 @@ void jet_hit_deff (void)
 	deff_exit ();
 }
 
-
+//jet switch hit
 CALLSET_ENTRY (jets, sw_jet)
 {
 	bounded_increment (jets_hit, 255);
@@ -68,15 +76,15 @@ CALLSET_ENTRY (jets, sw_jet)
 
 	score_multiple (SC_20K, riverclass);
 
-	if (caveshots == 20)
+	if (caveshots == 20)	//cow moo sound
 		sound_start (ST_SAMPLE, SND_COW, SL_1S, PRI_GAME_QUICK3);
-	else if (global_flag_test (GLOBAL_FLAG_GOLD_RUNNING))
+	else if (global_flag_test (GLOBAL_FLAG_GOLD_RUNNING))	//goldmine mode
 	{
 		if (jets_sound_index > 11)
 			jets_sound_index = 0;
 		sound_start (ST_SAMPLE, jet_coin_sounds[jets_sound_index], SL_1S, PRI_GAME_QUICK3);
 	}
-	else
+	else	//regular sound
 	{
 		if (jets_sound_index > 17)
 			jets_sound_index = 0;
@@ -84,8 +92,9 @@ CALLSET_ENTRY (jets, sw_jet)
 	}
 
 	if (riverclass == 6)
-		return;
+		return;	//exit, no need to increase anymore
 
+	//check if we have enough hits to increase riverclass
 	if (jets_hit >= jets_needed[riverclass])
 	{
 		jets_hit = 0;
@@ -97,14 +106,17 @@ CALLSET_ENTRY (jets, sw_jet)
 	}
 }
 
-
+//bumpers edge border switches
+//2 special switches in popbumper area
 CALLSET_ENTRY (jets, sw_jets_lower, sw_jets_right)
 {
 	sound_start (ST_SAMPLE, SND_BGARDEN_COIN_12, SL_1S, PRI_GAME_QUICK3);
 	bounded_increment (jets_extra_hit, 255);
 
+/*	
 	if (global_flag_test (GLOBAL_FLAG_RAFTMODE))
 		wpm_next_award ();
+*/
 }
 
 CALLSET_ENTRY (jets, start_ball)
@@ -113,7 +125,7 @@ CALLSET_ENTRY (jets, start_ball)
 	jets_extra_hit = 0;
 }
 
-CALLSET_ENTRY (jets, start_player)
+CALLSET_ENTRY (jets, start_game)
 {
 	jets_sound_index = 0;
 }

@@ -58,7 +58,7 @@ CALLSET_ENTRY (waitplunge, dev_lostmine_kick_attempt)
 }
 
 /*
- ALLSET_BOOL_ENTRY (waitplunge, dev_lostmine_kick_request)
+-ALLSET_BOOL_ENTRY (waitplunge, dev_lostmine_kick_request)
 {
 	if (in_live_game && 
 		(global_flag_test (GLOBAL_FLAG_BALL_AT_PLUNGER) || global_flag_test (GLOBAL_FLAG_HOLD_MINE_KICKOUT))
@@ -84,8 +84,8 @@ CALLSET_ENTRY (waitplunge, dev_lock_kick_attempt)
 	if (!global_flag_test (GLOBAL_FLAG_MBALL_RUNNING))
 	{
 		sound_start (ST_SAMPLE, SND_WHISTLE, SL_3S, PRI_GAME_QUICK3);
+		task_sleep (TIME_100MS);
 	}
-	task_sleep (TIME_200MS);
 }
 
 /*ALLSET_BOOL_ENTRY (waitplunge, dev_lock_kick_request)
@@ -100,9 +100,8 @@ CALLSET_ENTRY (waitplunge, dev_lock_kick_attempt)
 
 
 /* 
-Shoot left loop, score when it reaches right switch (so goes around) and vice versa 
-secret passage stops these timers too and starts new event
-secret passage only registers when shot from loop, not when shot from middle
+shoot left loop, score when it reaches right switch (so goes around) and vice versa 
+secret passage stops these timers too
 */
 CALLSET_ENTRY (simple, sw_secret_passage)
 {
@@ -143,8 +142,9 @@ CALLSET_ENTRY (simple, sw_right_loop)
 }
 
 
+
 /*  detect when we go up the ramp or down  */
-/*switch at bottom of ramp triggered */
+/* left ramp = ramp from lower to upper playfield, for multimill.c */
 CALLSET_ENTRY (simple, sw_left_ramp_enter)
 {
 	if (free_timer_test (TIM_LRAMPDOWN))
@@ -159,7 +159,6 @@ CALLSET_ENTRY (simple, sw_left_ramp_enter)
 	}
 }
 
-/* switch at top of ramp triggered */
 CALLSET_ENTRY (simple, sw_left_ramp_main)
 {
 	if (free_timer_test (TIM_LRAMP))
@@ -174,7 +173,7 @@ CALLSET_ENTRY (simple, sw_left_ramp_main)
 	}
 }
 
-/* right inlane, ball went up ramp and down at right side of pf */
+//for multimill.c  if we make the shot up, left go to right inlane and try to shoot again
 CALLSET_ENTRY (simple, sw_right_inlane)
 {
 	if (multi_ball_play ())
@@ -183,35 +182,40 @@ CALLSET_ENTRY (simple, sw_right_inlane)
 	free_timer_stop (TIM_LRAMPDOWN);
 }
 
-/* ball goes down, towards flippers */
 CALLSET_ENTRY (simple, left_ramp_down)
 {
 	if (global_flag_test (GLOBAL_FLAG_RAFTMODE))
-		speech_start (SND_SCREAM6, SL_2S);
+		speech_start (SND_SPLASH7, SL_2S);
 }
 
-/* rapids made */
+
+
+
+//gets triggered after sw47 rapids enter ramp ends in left inlane 26
 CALLSET_ENTRY (simple, sw_rapids_main_ramp)
 {
 	bounded_increment (shots_falls, 255);
 	speech_start (SND_SCREAM1, SL_2S);
-	leff_start (LEFF_FL_ULPF);  /* TODO other LEFF with more flashers */
+//	leff_start (LEFF_FL_RAPIDSMADE);
 }
 
 
-/* reset */
+
+//reset vars used in this file
 CALLSET_ENTRY (simple, start_player)
 {
 	shots_falls = 0;
 	shots_secretpass = 0;
 }
 
+
+//every switch scores 10 points
 CALLSET_ENTRY (simple, any_pf_switch)
 {
 	score (SC_10);
 }
 
-/*--ALLSET_ENTRY (simple, start_without_credits)
+/*ALLSET_ENTRY (simple, start_without_credits)  --removed was now FREE_ONLY setting
 {
 	if (!timer_find_gid (GID_START_NO_CREDITS_DEBOUNCE))
 	{

@@ -21,6 +21,8 @@
 /*
 Timed mode - 30 seconds everything scores 5x more
 started from wpoolmodes.c
+
+NOT USED ANYMODE !! v2 is made
 */
 
 #include <freewpc.h>

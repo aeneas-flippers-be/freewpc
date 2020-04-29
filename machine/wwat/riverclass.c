@@ -19,28 +19,44 @@
  */
 
 /*
-lamps:
-18: 6x multi, white
-37: 2x multi, white
-38: 3x multi, white
-47: 4x multi, white
-48: 5x multi, white
-Rivclass: 2x multi, 3x multi, 4x multi, 5x multi, 6x multi
-
-Show riverclass status. Goes up by jetbumper hits. Used as bonus multi x.
+Show riverclass status. Goes up by jetbumper hits. Used as bonus multiplier.
 */
 
 #include <freewpc.h>
 
+extern U8 riverclass;  //from vars.c
 
-__local__ U8 riverclass;
+void rivcl_lamps_off (void)
+{
+	lamp_off (LM_6X_MULTI);
+	lamp_off (LM_5X_MULTI);
+	lamp_off (LM_4X_MULTI);
+	lamp_off (LM_3X_MULTI);
+	lamp_off (LM_2X_MULTI);
+}
 
-
+void rivcl_lamp_update (void)
+{
+	switch (riverclass)
+	{
+		case 6:
+			lamp_on (LM_6X_MULTI);
+		case 5:
+			lamp_on (LM_5X_MULTI);
+		case 4:
+			lamp_on (LM_4X_MULTI);
+		case 3:
+			lamp_on (LM_3X_MULTI);
+		case 2:
+			lamp_on (LM_2X_MULTI);
+			break;
+	}
+}
 
 void rivcl_reset (void)
 {
 	riverclass = 1;
-	lamplist_apply (LAMPLIST_RIVCLASS, lamp_off);
+	rivcl_lamps_off ();
 }
 
 void rivcl_increase_class (void)
@@ -50,6 +66,7 @@ void rivcl_increase_class (void)
 	if (riverclass < 6)
 	{
 		riverclass++;
+		rivcl_lamp_update ();
 
 		deff_start (DEFF_RIVERCLASS);
 		switch (riverclass)
@@ -73,38 +90,20 @@ void rivcl_increase_class (void)
 	}
 }
 
-CALLSET_ENTRY (rivcl, lamp_update)
+CALLSET_ENTRY (rivcl, raft_lamps_off)
 {
-	switch (riverclass)
-	{
-		case 6:
-			lamp_tristate_on (LM_6X_MULTI);
-		case 5:
-			lamp_tristate_on (LM_5X_MULTI);
-		case 4:
-			lamp_tristate_on (LM_4X_MULTI);
-		case 3:
-			lamp_tristate_on (LM_3X_MULTI);
-		case 2:
-			lamp_tristate_on (LM_2X_MULTI);
-			break;
-	}
-/*	if (riverclass > 1)
-		lamp_tristate_on (LM_2X_MULTI);
-	if (riverclass > 2)
-		lamp_tristate_on (LM_3X_MULTI);
-	if (riverclass > 3)
-		lamp_tristate_on (LM_4X_MULTI);
-	if (riverclass > 4)
-		lamp_tristate_on (LM_5X_MULTI);
-	if (riverclass == 6)
-		lamp_tristate_on (LM_6X_MULTI);
-*/
+	rivcl_lamps_off ();
+}
+
+CALLSET_ENTRY (rivcl, raft_lamps_on)
+{
+	rivcl_lamp_update ();
 }
 
 CALLSET_ENTRY (rivcl, start_ball)
 {
-	lamplist_apply (LAMPLIST_RIVCLASS, lamp_off);
+	rivcl_lamps_off ();
+	rivcl_lamp_update ();
 }
 
 CALLSET_ENTRY (rivcl, start_player)

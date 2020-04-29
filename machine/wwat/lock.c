@@ -23,22 +23,27 @@ All lock stuff here
 
 Rules:
 - hit 2 green targets to light locks, then lock 3 balls and start 3ball mball.c
-- skillshot can also lock a ball and start qmball.c 2 ball mb
+//- skillshot can also lock a ball and start qmball.c 2 ball mb
 - wetwilly mode started here when raft9 reached
+
 */
 
 #include <freewpc.h>
 #include <status.h>
 
-extern U8 riverclass;
-extern U8 raftnr;
+extern U8 riverclass; 
+extern U8 raftnr; //rafts.c
 
-__local__ U8 lock_locks_lit;	//locks lit by current player
-__local__ U8 lock_locks_made;	//locks made by current player, at the moment
+extern U8 lock_player_locks_lit;	//locks lit by current player
+extern U8 lock_balls_in_devlock;  //locks.c  balls actually present in physical lock
 
-__local__ U8 mballs_played;
-U8 lock_lefthit;
-U8 lock_righthit;
+__local__ U8 lock_player_vlocks_made;	//balls locked by current player, can be more or less than nr of physical balls locked
+
+__local__ U8 player_mballs_played;	//how many times player started multiball
+
+U8 lock_lefthit;	//U8 to count how many times target has been hit
+U8 lock_righthit;	//nr to hit increases with nr of mballs played
+
 
 
 
@@ -47,229 +52,84 @@ U8 lock_righthit;
 //	lock_balls_in_lock = device_recount (device_entry (DEVNO_LOCK));
 //}
 
-
-//check at start of ball how many balls are physical in lock and give lit locks to compensate
-void lock_recountlit (void)
+void hz3_deff (void)
 {
-	U8 ballsinlock;
-	ballsinlock = device_recount (device_entry (DEVNO_LOCK));
-	if (lock_locks_made > ballsinlock)
-	{
-		lock_locks_lit = lock_locks_lit + lock_locks_made - ballsinlock;
-		lock_locks_made = device_recount (device_entry (DEVNO_LOCK));
-	}
-}
-
-void lock_unlockball (void)
-{
-	global_flag_off (GLOBAL_FLAG_HOLD_LOCK_KICKOUT);
-	device_unlock_ball (device_entry (DEVNO_LOCK));
-	bounded_decrement (lock_locks_made, 0);
-//	bounded_increment (lock_locks_lit, 3);
-}
-
-void lock_lockball (void)
-{
-	bounded_decrement (lock_locks_lit, 0);
-	bounded_increment (lock_locks_made, 3);
-
-	// check if we can keep the ball in the physical lock
-	if (lock_locks_made == device_recount (device_entry (DEVNO_LOCK)))
-		device_lock_ball (device_entry (DEVNO_LOCK));
-}
-
-bool can_lock_ball (void)
-{	
-//	lock_recountlit ();
-	if ( lock_locks_lit > 0 
-		&& lock_locks_made < 3
-		&& global_flag_test (GLOBAL_FLAG_RAFTMODE))
-		return TRUE;
-	else
-		return FALSE;
-}
-
-void lock_reset_tgtshit (void)
-{
-	lock_lefthit = 0;
-	lock_righthit = 0;
-	lamp_tristate_off (LM_LOCK_LEFT);
-	lamp_tristate_off (LM_LOCK_RIGHT);
-}
-
-void lock_check_addlock (void)
-{
-	lock_recountlit ();
-	if (lock_lefthit >  mballs_played && lock_righthit >  mballs_played && lock_locks_lit == 0)
-	{
-		lock_locks_lit++;
-		deff_start (DEFF_LOCK_LIT);
-	}
-}
-
-void lock_resetlock (void)
-{
-	lock_locks_made = 0;
-//	lock_max_locks_made = 0;
-	lock_locks_lit = 0;
-	lamp_tristate_off (LM_LOCK_1);
-	lamp_tristate_off (LM_LOCK_2);
-	lamp_tristate_off (LM_LOCK_3);
-	lock_reset_tgtshit ();
+	dmd_alloc_low_clean ();
+	font_render_string_center (&font_fixed6, 64, 16, "NO WAY OUT");
+	dmd_show_low ();
+	task_sleep_sec (1);
+	deff_exit ();
 }
 
 
 
-
-CALLSET_ENTRY (lock, sw_lock_left)
+void lock_lamp_update (void)
 {
-	if (!global_flag_test (GLOBAL_FLAG_RAFTMODE))
+//	if (!global_flag_test (GLOBAL_FLAG_RAFTMODE) || free_timer_test (TIM_SKILL) || global_flag_test (GLOBAL_FLAG_SKILL_ENABLED) 
+
+	if (!global_flag_test (GLOBAL_FLAG_RAFTMODE) // || global_flag_test (GLOBAL_FLAG_SKILL_ENABLED) 
+		|| global_flag_test (GLOBAL_FLAG_MBALL_RUNNING))
 		return;
 
-	bounded_increment (lock_lefthit, 255);
-	lock_check_addlock ();
-}
-
-CALLSET_ENTRY (lock, sw_lock_right)
-{
-	if (!global_flag_test (GLOBAL_FLAG_RAFTMODE))
-		return;
-
-	bounded_increment (lock_righthit, 255);
-	lock_check_addlock ();
-}
-
-CALLSET_ENTRY (lock, dev_lock_enter)
-{
-	if (!in_live_game || !global_flag_test (GLOBAL_FLAG_RAFTMODE))
-		return;
-
-	if (raftnr == 9)
-	{
-		raftnr++;
-		global_flag_on (GLOBAL_FLAG_HOLD_LOCK_KICKOUT);
-		wet_start ();
-		return;
-	}
-
-	if (free_timer_test (TIM_SKILL))
-	{
-		global_flag_on (GLOBAL_FLAG_HOLD_LOCK_KICKOUT);
-		device_lock_ball (device_entry (DEVNO_LOCK));
-		qmball_start ();
-		return;
-	}
-
-	if (can_lock_ball ())
-	{
-		lock_lockball ();
-
-		switch (lock_locks_made)
-		{
-			case 1:
-				deff_start (DEFF_LOCK_LOCK1);
-				break;
-			case 2:
-				deff_start (DEFF_LOCK_LOCK2);
-				break;
-			case 3:
-				deff_start (DEFF_LOCK_LOCK3);
-				break;
-		}
-		lock_reset_tgtshit ();
-		task_sleep_sec (2);
-
-		if (lock_locks_made == 3)
-		{
-			lock_resetlock ();
-			while (deff_get_active() == DEFF_LOCK_LOCK3)
-			{
-				task_sleep (TIME_100MS);
-			}
-
-			if (flag_test (FLAG_WPOOLFINISHED) && flag_test (FLAG_GOLDPLAYED) && flag_test (FLAG_WETFINISHED) 
-					&& flag_test (FLAG_MAPPLAYED) && riverclass == 6)
-			{
-				wizard_start ();
-			}
-			else
-			{
-				bounded_increment (mballs_played, 5);
-				mball_start ();
-			}
-		}
-	}
-	else
-		deff_start (DEFF_HZ3);
-}
-
-CALLSET_ENTRY (lock, lamp_update)
-{
-	if (global_flag_test (GLOBAL_FLAG_PF_LAMPS_OFF) || !global_flag_test (GLOBAL_FLAG_RAFTMODE))
-		return;
-
-	if (free_timer_test (TIM_SKILL) || 	global_flag_test (GLOBAL_FLAG_SKILL_ENABLED))
-		return;
-
-	if (lock_lefthit > mballs_played)
+	if (lock_lefthit > player_mballs_played || lock_player_locks_lit >0)
 		lamp_tristate_on (LM_LOCK_LEFT);
 	else 
 		lamp_tristate_flash (LM_LOCK_LEFT);
 	
-	if (lock_righthit > mballs_played)
+	if (lock_righthit > player_mballs_played || lock_player_locks_lit >0)
 		lamp_tristate_on (LM_LOCK_RIGHT);
 	else 
 		lamp_tristate_flash (LM_LOCK_RIGHT);
 
-	if (lock_locks_made == 0 && lock_locks_lit == 0)
+	if (lock_player_vlocks_made == 0 && lock_player_locks_lit == 0)
 	{
 		lamp_tristate_off (LM_LOCK_1);
 		lamp_tristate_off (LM_LOCK_2);
 		lamp_tristate_off (LM_LOCK_3);
 	}
-	else if (lock_locks_made == 0 && lock_locks_lit == 1)
+	else if (lock_player_vlocks_made == 0 && lock_player_locks_lit == 1)
 	{
 		lamp_tristate_flash (LM_LOCK_1);
 		lamp_tristate_off (LM_LOCK_2);
 		lamp_tristate_off (LM_LOCK_3);
 	}
-	else if (lock_locks_made == 0 && lock_locks_lit == 2)
+	else if (lock_player_vlocks_made == 0 && lock_player_locks_lit == 2)
 	{
 		lamp_tristate_flash (LM_LOCK_1);
 		lamp_tristate_flash (LM_LOCK_2);
 		lamp_tristate_off (LM_LOCK_3);
 	}
-	else if (lock_locks_made == 0 && lock_locks_lit == 3)
+	else if (lock_player_vlocks_made == 0 && lock_player_locks_lit == 3)
 	{
 		lamp_tristate_flash (LM_LOCK_1);
 		lamp_tristate_flash (LM_LOCK_2);
 		lamp_tristate_flash (LM_LOCK_3);
 	}
-	else if (lock_locks_made == 1 && lock_locks_lit == 0)
+	else if (lock_player_vlocks_made == 1 && lock_player_locks_lit == 0)
 	{
 		lamp_tristate_on (LM_LOCK_1);
 		lamp_tristate_off (LM_LOCK_2);
 		lamp_tristate_off (LM_LOCK_3);
 	}
-	else if (lock_locks_made == 1 && lock_locks_lit == 1)
+	else if (lock_player_vlocks_made == 1 && lock_player_locks_lit == 1)
 	{
 		lamp_tristate_on (LM_LOCK_1);
 		lamp_tristate_flash (LM_LOCK_2);
 		lamp_tristate_off (LM_LOCK_3);
 	}
-	else if (lock_locks_made == 1 && lock_locks_lit > 1)
+	else if (lock_player_vlocks_made == 1 && lock_player_locks_lit > 1)
 	{
 		lamp_tristate_on (LM_LOCK_1);
 		lamp_tristate_flash (LM_LOCK_2);
 		lamp_tristate_flash (LM_LOCK_3);
 	}
-	else if (lock_locks_made == 2 && lock_locks_lit == 0)
+	else if (lock_player_vlocks_made == 2 && lock_player_locks_lit == 0)
 	{
 		lamp_tristate_on (LM_LOCK_1);
 		lamp_tristate_on (LM_LOCK_2);
 		lamp_tristate_off (LM_LOCK_3);
 	}
-	else if (lock_locks_made == 2 && lock_locks_lit > 0)
+	else if (lock_player_vlocks_made == 2 && lock_player_locks_lit > 0)
 	{
 		lamp_tristate_on (LM_LOCK_1);
 		lamp_tristate_on (LM_LOCK_2);
@@ -277,33 +137,255 @@ CALLSET_ENTRY (lock, lamp_update)
 	}
 }
 
+//check at start of ball how many balls are physical in lock and give lit locks to compensate
+//void lock_recountlit (void)
+void lock_compensate_stolenlocks (void)
+{
+	if (lock_player_vlocks_made > lock_balls_in_devlock)
+	{
+		lock_player_locks_lit = lock_player_vlocks_made - lock_balls_in_devlock;
+	}
+	lock_lamp_update ();
+}
+
+void lock_unlockball (void) 	//also started from other multiball code
+{
+	bounded_decrement (lock_balls_in_devlock, 0);
+	global_flag_off (GLOBAL_FLAG_HOLD_LOCK_KICKOUT);
+	device_unlock_ball (device_entry (DEVNO_LOCK));
+}
+
+void lock_lockball (void)		//actually lock a ball
+{
+	bounded_increment (lock_balls_in_devlock, 3);
+//	device_lock_ball (device_entry (DEVNO_LOCK));
+	device_t *dev = device_entry (DEVNO_LOCK);
+	device_lock_ball (dev);
+}
+
+bool can_lock_ball (void)	//check if we can lock a ball or release it from devlock
+{	
+	if ( lock_player_locks_lit > 0
+		&& lock_player_vlocks_made < 3
+	//	&& global_flag_test (GLOBAL_FLAG_RAFTMODE)
+		)
+		return TRUE;
+	else
+		return FALSE;
+}
+
+
+void lock_reset_tgts_hit (void)		//reset counters
+{
+	lock_lefthit = 0;
+	lock_righthit = 0;
+}
+
+//game rule : required target hits increase with nr of multiballs played
+void lock_check_and_add_locklit (void)	//check if enough target hits to light lock
+{
+	if (lock_player_locks_lit == 0 && lock_lefthit >  player_mballs_played && lock_righthit >  player_mballs_played)
+	{
+		lock_player_locks_lit++;
+		deff_start (DEFF_LOCK_LIT);
+	}
+	lock_lamp_update ();
+}
+
+void lock_resetlock (void)		//reset lock state at start of player or mball started
+{
+	lock_player_vlocks_made = 0;
+//	lock_max_locks_made = 0;
+	lock_player_locks_lit = 0;
+	lamp_tristate_off (LM_LOCK_1);
+	lamp_tristate_off (LM_LOCK_2);
+	lamp_tristate_off (LM_LOCK_3);
+	lamp_tristate_off (LM_LOCK_LEFT);
+	lamp_tristate_off (LM_LOCK_RIGHT);
+	lock_reset_tgts_hit ();
+}
+
+void lock_lamps_off (void)		//turn off lamps
+{
+	lamp_tristate_off (LM_LOCK_LEFT);
+	lamp_tristate_off (LM_LOCK_RIGHT);
+	lamp_tristate_off (LM_LOCK_1);
+	lamp_tristate_off (LM_LOCK_2);
+	lamp_tristate_off (LM_LOCK_3);
+}
+
+//game rule: decide what mode to start
+void lock_devlock_entered (void)	//ball entered lock device
+{
+
+	if (raftnr == 9)	//final raft - start wet willy
+	{
+		raftnr++;
+		global_flag_on (GLOBAL_FLAG_HOLD_LOCK_KICKOUT);
+//		wet_start ();
+		callset_invoke (start_wetwilly);
+		return;
+	}
+
+/*	
+//REMOVED : no more quickmb from skillshot as it's too easy
+	if (free_timer_test (TIM_SKILL))
+	{
+		global_flag_on (GLOBAL_FLAG_HOLD_LOCK_KICKOUT);
+		qmball_start ();
+		return;
+	}
+*/
+
+//	if ( lock_player_locks_lit > 0 && lock_player_vlocks_made < 3)	//player can lock a ball
+	if (can_lock_ball ())
+	{
+
+//		if (flag_test (FLAG_HZ3LIT) && global_flag_test (GLOBAL_FLAG_RAFTMODE))
+//			raft_score_hz3_nowayout (TRUE); 	//moved here from rafts.c  - award raft and then lock ball
+//			callset_invoke (raft_score_hz3_nowayout_true);
+
+		bounded_decrement (lock_player_locks_lit, 0);
+		bounded_increment (lock_player_vlocks_made, 3);
+
+		if (lock_balls_in_devlock < lock_player_vlocks_made)	//check if we need to physically lock the ball
+			lock_lockball ();
+
+		lock_reset_tgts_hit ();
+
+		lock_lamp_update ();
+
+		switch (lock_player_vlocks_made)
+		{
+			case 1:
+				deff_start_sync (DEFF_LOCK_LOCK1);
+				break;
+			case 2:
+				deff_start_sync (DEFF_LOCK_LOCK2);
+				break;
+//			case 3:		//moved below to start of multiball
+//				deff_start_sync (DEFF_LOCK_LOCK3);
+//				break;
+			default:
+				break;
+		}
+
+		if (lock_player_vlocks_made == 3)
+		{
+			lock_resetlock ();
+//			while (deff_get_active() == DEFF_LOCK_LOCK3)
+//			{
+//				task_sleep (TIME_100MS);
+//			}
+
+//			if (flag_test (FLAG_WPOOLFINISHED) && flag_test (FLAG_GOLDPLAYED) && flag_test (FLAG_WETFINISHED) 
+//					&& riverclass == 6)
+//			{
+//				wizard_start ();
+//				return;
+//			}
+//			else
+
+//			{
+				deff_start_sync (DEFF_LOCK_LOCK3);
+				bounded_increment (player_mballs_played, 255);
+				mball_start ();
+				return;
+//			}
+
+		}
+	}
+	else
+	{
+		if (flag_test (FLAG_HZ3LIT))
+		{
+			callset_invoke (raft_score_hz3_nowayout_false);
+//			raft_score_hz3_nowayout (FALSE); 	//moved here from rafts.c  - no lock, but award raft
+		}
+		else
+			deff_start (DEFF_HZ3);	//no lock, no hazard award, just proceed and kickout pinball
+	}	
+	
+}
+
+
+CALLSET_ENTRY (lock, sw_lock_left)		//left lock switch hit
+{
+	if (!global_flag_test (GLOBAL_FLAG_RAFTMODE))
+		return;
+
+	bounded_increment (lock_lefthit, 255);
+	lock_check_and_add_locklit ();
+}
+
+CALLSET_ENTRY (lock, sw_lock_right)		//right lock switch hit
+{
+	if (!global_flag_test (GLOBAL_FLAG_RAFTMODE))
+		return;
+
+	bounded_increment (lock_righthit, 255);
+	lock_check_and_add_locklit ();
+}
+
+CALLSET_ENTRY (lock, dev_lock_enter)		//ball entered in lock device
+{
+	if (!in_live_game || !global_flag_test (GLOBAL_FLAG_RAFTMODE) || multi_ball_play ())
+		return;
+	
+	lock_devlock_entered ();
+}
+
+CALLSET_ENTRY (lock, raft_lamps_off)	//turn off lamps
+{
+	lock_lamps_off ();
+}
+
+CALLSET_ENTRY (lock, raft_lamps_on)		//turn on lamps
+{
+	lock_lamp_update ();
+}
+
+
 CALLSET_ENTRY (lock, start_ball)
 {
-	lock_recountlit ();
-	lock_reset_tgtshit ();
+	if (!global_flag_test (GLOBAL_FLAG_RAFTMODE))
+		return;
+
+	lock_compensate_stolenlocks ();
+	lock_reset_tgts_hit ();
+	lock_lamp_update ();
 }
 
 CALLSET_ENTRY (lock, start_player)
 {
-	mballs_played = 0;
+	player_mballs_played = 0;
+	lock_player_locks_lit = 0;
 	lock_resetlock ();
+
+//	lock_reset_tgts_hit ();
 }
 
-CALLSET_ENTRY (lock, end_game, amode_start)
+CALLSET_ENTRY (lock, start_game)
+{
+	lock_balls_in_devlock = 0;
+}
+
+CALLSET_ENTRY (lock, end_game)
 {
 	device_request_empty (device_entry (DEVNO_LOCK));
+	lock_balls_in_devlock = 0;
 }
 
 
 CALLSET_ENTRY (lock, status_report)
 {
 	status_page_init ();
-	sprintf ("%d LOCKS LIT", lock_locks_lit);
+	sprintf ("%d LOCKS LIT", lock_player_locks_lit);
 	font_render_string_center (&font_mono5, 64, 10, sprintf_buffer);
-	sprintf ("%d BALLS LOCKED", lock_locks_made);
+	sprintf ("%d BALLS VLOCKED", lock_player_vlocks_made);
 	font_render_string_center (&font_mono5, 64, 18, sprintf_buffer);
-//	sprintf ("%d BALLS IN LOCK", lock_balls_in_lock);
-//	font_render_string_center (&font_mono5, 64, 22, sprintf_buffer);
+	sprintf ("%d BALLS IN LOCK", lock_balls_in_devlock);
+	font_render_string_center (&font_mono5, 64, 24, sprintf_buffer);
 
 	status_page_complete ();
 }

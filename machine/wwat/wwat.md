@@ -31,11 +31,9 @@ define MACHINE_HAS_UPPER_RIGHT_FLIPPER
 define MACHINE_BALL_SAVE_TIME 1
 define MACHINE_CUSTOM_AMODE
 
-define MACHINE_GRAND_CHAMPION_INITIALS { 'A', 'E', 'V' }
-define MACHINE_GRAND_CHAMPION_SCORE { 0x00, 0x20, 0x00, 0x00, 0x00 }
-define MACHINE_HIGH_SCORE_INITIALS { 'M', 'A', 'Y' }, { 'K', 'A', 'T' }, { 'M', 'A', 'Y' }, { 'K', 'A', 'T' }
-define MACHINE_HIGH_SCORES { 0x00, 0x17, 0x50, 0x00, 0x00 }, { 0x00, 0x15, 0x00, 0x00, 0x00 }, { 0x00, 0x12, 0x50, 0x00, 0x00 }, { 0x00, 0x10, 0x00, 0x00, 0x00 }
+define FREE_ONLY
 
+#define DEVELOPMENT_MENU
 
 ##########################################################################
 # Lamp Description
@@ -162,7 +160,7 @@ define MACHINE_HIGH_SCORES { 0x00, 0x17, 0x50, 0x00, 0x00 }, { 0x00, 0x15, 0x00,
 48: canyon entrance, ingame
 51: left slingshot, ingame, c_decl(sw_sling)
 52: right slingshot, ingame, c_decl(sw_sling)
-53: ball shooter, edge, shooter, novalid, debounce(TIME_200MS)
+53: ball shooter, edge, shooter, novalid, noscore, debounce(TIME_200MS)
 54: jets lower, ingame
 55: jets right, ingame
 56: extra ball, ingame, standup
@@ -214,7 +212,7 @@ H4: lock popper, duty(SOL_DUTY_100), time(TIME_133MS)
 H5: kickback, duty(SOL_DUTY_50), time(TIME_100MS)
 H6: bigfoot div, duty(SOL_DUTY_50), time(TIME_133MS)
 H7: knocker, knocker, duty(SOL_DUTY_75), time(TIME_50MS), nosearch
-H8: Backglass, flash
+#H8: Backglass, flash
 
 #L = low power J127
 #### these are all 50v power
@@ -232,7 +230,7 @@ G1: bigfoot body fl, flash
 G2: r mountain fl, flash
 G3: l mountain fl, flash
 G4: ul pf fl, flash
-G5: Insanity falls fl, flash
+G5: insanity falls fl, flash
 G6: mine popper fl, flash
 G7: wpool enter fl, flash
 G8: bigfoot cave fl, flash
@@ -246,6 +244,11 @@ A4: chase data
 
 # F = J902 on Fliptronic II
 #### these are all 50v power
+F1: L.R. Flip Power
+F2: L.R. Flip Hold
+F3: L.L. Flip Power
+F4: L.L. Flip Hold
+
 
 [templates]
 outhole: driver(outhole), sol=SOL_OUTHOLE, swno=SW_OUTHOLE, swevent=sw_outhole
@@ -345,7 +348,10 @@ Lock: lock popper, lock 3, lock 2, lock 1, init_max_count(0)
 10K:
 20K:
 25K:
+50K:
 100K:
+175K:
+195110:
 250K:
 1M:
 10M:
@@ -368,8 +374,6 @@ bd_5xpf_played:
 wpoolfinished:
 goldplayed:
 wetfinished:
-mapplayed:
-dam lit:
 
 hz1lit:
 hz2lit:
@@ -391,9 +395,10 @@ bfckey:
 ##########################################################################
 [globalflags]
 raftmode:
-dam running:
+bbash running:
+cavehry running:
 cow running:
-fall running:
+dam running:
 gold running:
 hurry running:
 map running:
@@ -401,7 +406,6 @@ mball Running:
 qmball Running:
 wpch running:
 wp5x running:
-wpmano running:
 wet running:
 wiz running:
 wiz mb running:
@@ -421,12 +425,12 @@ rivere:
 riverr2:
 
 wpoollit:
-pf lamps off:
 skill enabled:
 
 hold lock kickout:
 hold mine kickout:
-##ball at plunger:
+#plunger ball:
+#fall running:
 
 
 ##########################################################################
@@ -436,26 +440,42 @@ hold mine kickout:
 #
 #text page GAME_OBJS
 ####################
-wpm mystery: PRI_GAME_MODE4, D_QUEUED+D_PAUSE
-raft perfect: PRI_GAME_QUICK3, D_QUEUED+D_TIMEOUT
-raft up: PRI_GAME_QUICK3, D_QUEUED+D_TIMEOUT
-map running: runner, PRI_GAME_MODE4, D_QUEUED
-bftgt: PRI_GAME_QUICK3, D_RESTARTABLE
+wpm mystery: PRI_GAME_MODE4, D_QUEUED
+#map running: runner, PRI_GAME_MODE4, D_QUEUED
+bftgt: PRI_GAME_LOW3, D_RESTARTABLE
 bftgt ok: PRI_GAME_QUICK3, D_QUEUED+D_TIMEOUT+D_RESTARTABLE
-dam running: runner, PRI_GAME_MODE4, D_QUEUED
+
+jet hit: PRI_GAME_LOW2, D_RESTARTABLE+D_TIMEOUT
+
+bash running: runner, PRI_GAME_MODE4, D_QUEUED
+bash end: PRI_GAME_LOW5, D_QUEUED
+
+cave running: runner, PRI_GAME_MODE2, D_QUEUED
+cave scored: PRI_GAME_LOW6, D_TIMEOUT
+
+hurry running: runner, PRI_GAME_MODE2, D_QUEUED
+hurry scored: PRI_GAME_LOW6, D_QUEUED
+
+kickback lit: PRI_GAME_LOW2, D_QUEUED+D_TIMEOUT
+kickback: PRI_GAME_LOW6, D_QUEUED+D_TIMEOUT
+
+hz3: PRI_GAME_LOW5, D_TIMEOUT
+
 
 #
-#MACHINE_PAGE page GAME_PAGED_OBJS
+#MACHINE_PAGE page GAME_PAGED_OBJS page(MACHINE_PAGE),
 ##################################
-jet hit: page(MACHINE_PAGE), PRI_GAME_QUICK2, D_RESTARTABLE
 cave award: page(MACHINE_PAGE), PRI_GAME_QUICK3, D_QUEUED+D_TIMEOUT
-hurry running: page(MACHINE_PAGE), runner, PRI_GAME_MODE6, D_QUEUED
-hurry scored: page(MACHINE_PAGE), PRI_GAME_QUICK6, D_QUEUED
+
+#raft perfect: page(MACHINE_PAGE), PRI_GAME_LOW4, D_QUEUED+D_TIMEOUT
+raft up: page(MACHINE_PAGE), PRI_GAME_LOW3, D_QUEUED+D_TIMEOUT
 
 
 #
-#MACHINE2_PAGE page GAME2_OBJS
+#MACHINE2_PAGE page GAME2_OBJS page(MACHINE2_PAGE),
 ##############################
+dam running: page(MACHINE2_PAGE), runner, PRI_GAME_MODE4, D_QUEUED
+
 mb jackpot collected: page(MACHINE2_PAGE), PRI_GAME_QUICK4, D_QUEUED+D_TIMEOUT+D_RESTARTABLE
 
 wet running: page(MACHINE2_PAGE), runner, PRI_GAME_MODE4, D_QUEUED
@@ -464,75 +484,76 @@ wet jackpot: page(MACHINE2_PAGE), PRI_GAME_QUICK2, D_RESTARTABLE
 wpmano running: page(MACHINE2_PAGE), runner, PRI_GAME_MODE4, D_QUEUED
 wpmano total: page(MACHINE2_PAGE), PRI_GAME_MODE5, D_QUEUED
 
-fall running: page(MACHINE2_PAGE), runner, PRI_GAME_MODE4, D_QUEUED
-fall ok: page(MACHINE2_PAGE), PRI_GAME_QUICK5, D_QUEUED+D_TIMEOUT
+#fall running: page(MACHINE2_PAGE), runner, PRI_GAME_MODE4, D_QUEUED
+#fall ok: page(MACHINE2_PAGE), PRI_GAME_QUICK5, D_QUEUED+D_TIMEOUT
 
 wiz running: page(MACHINE2_PAGE), runner, PRI_GAME_MODE6, D_QUEUED
 
 
 #
-#MACHINE3_PAGE page GAME3_OBJS
+#MACHINE3_PAGE page GAME3_OBJS page(MACHINE3_PAGE)
 ##############################
 bonus: page(MACHINE3_PAGE), runner, PRI_BONUS
 endgame: page(MACHINE3_PAGE), runner, PRI_BONUS
 
 #deffs3
-extra ball: page(MACHINE3_PAGE), PRI_EB, D_PAUSE+D_QUEUED
-extra ball lit: page(MACHINE3_PAGE), PRI_EB, D_PAUSE+D_QUEUED
+extra ball: page(MACHINE3_PAGE), PRI_EB, D_QUEUED
+extra ball lit: page(MACHINE3_PAGE), PRI_EB, D_QUEUED+D_ABORTABLE
 jackpot: page(MACHINE3_PAGE), PRI_GAME_QUICK2, D_RESTARTABLE
 bigfoot jackpot: page(MACHINE3_PAGE), PRI_GAME_QUICK2, D_QUEUED+D_TIMEOUT+D_RESTARTABLE
-mb start: page(MACHINE3_PAGE), PRI_GAME_MODE5, D_QUEUED+D_PAUSE
+mb intro: page(MACHINE3_PAGE), PRI_GAME_MODE5, D_QUEUED
 mb running: page(MACHINE3_PAGE), runner, PRI_GAME_MODE4, D_QUEUED
 mb restart: page(MACHINE3_PAGE), runner, PRI_GAME_MODE5, D_QUEUED
 mb relocked: page(MACHINE3_PAGE), PRI_GAME_QUICK3, D_QUEUED+D_TIMEOUT
-riverclass: page(MACHINE3_PAGE), PRI_GAME_QUICK3, D_QUEUED+D_TIMEOUT
-kickback: page(MACHINE3_PAGE), PRI_GAME_QUICK3, D_QUEUED+D_TIMEOUT
+riverclass: page(MACHINE3_PAGE), PRI_GAME_LOW6, D_QUEUED+D_TIMEOUT
 lock lit: page(MACHINE3_PAGE), PRI_GAME_QUICK5, D_QUEUED
-lock lock1: page(MACHINE3_PAGE), PRI_GAME_QUICK6, D_QUEUED+D_PAUSE
-lock lock2: page(MACHINE3_PAGE), PRI_GAME_QUICK6, D_QUEUED+D_PAUSE
-lock lock3: page(MACHINE3_PAGE), PRI_GAME_QUICK6, D_QUEUED+D_PAUSE
-wpch start: page(MACHINE3_PAGE), PRI_GAME_MODE5, D_QUEUED
+lock lock1: page(MACHINE3_PAGE), PRI_GAME_QUICK6, D_QUEUED
+lock lock2: page(MACHINE3_PAGE), PRI_GAME_QUICK6, D_QUEUED
+lock lock3: page(MACHINE3_PAGE), PRI_GAME_QUICK6, D_QUEUED
+wpch intro: page(MACHINE3_PAGE), PRI_GAME_MODE5, D_QUEUED+D_ABORTABLE
 wpch running: page(MACHINE3_PAGE), runner, PRI_GAME_MODE4, D_QUEUED
 wpch jackpot: page(MACHINE3_PAGE), PRI_GAME_QUICK2, D_QUEUED+D_TIMEOUT+D_RESTARTABLE
 wpch jackpot6: page(MACHINE3_PAGE), PRI_GAME_QUICK3, D_QUEUED+D_TIMEOUT
 mmilcollected: page(MACHINE3_PAGE), PRI_GAME_QUICK2, D_QUEUED+D_TIMEOUT+D_RESTARTABLE
-qmb start: page(MACHINE3_PAGE), PRI_GAME_MODE5, D_QUEUED+D_PAUSE
-qmb running: page(MACHINE3_PAGE), runner, PRI_GAME_MODE4, D_QUEUED
+qmb intro: page(MACHINE3_PAGE), PRI_GAME_MODE5, D_QUEUED
+qmb running: page(MACHINE3_PAGE), runner, PRI_GAME_MODE5, D_QUEUED
 qmb up: page(MACHINE3_PAGE), PRI_GAME_QUICK3, D_QUEUED+D_TIMEOUT
 gold running: page(MACHINE3_PAGE), runner, PRI_GAME_MODE4, D_QUEUED
-gold total: page(MACHINE3_PAGE), PRI_GAME_QUICK6, D_QUEUED+D_TIMEOUT+D_PAUSE
 wpm dirty: page(MACHINE3_PAGE), PRI_GAME_QUICK3, D_QUEUED+D_TIMEOUT
 wpm enter: page(MACHINE3_PAGE), PRI_GAME_QUICK4, D_QUEUED+D_TIMEOUT
 wet qual: page(MACHINE3_PAGE), PRI_GAME_QUICK4, D_QUEUED
-wet start: page(MACHINE3_PAGE), PRI_GAME_MODE5, D_QUEUED+D_PAUSE
+wet intro: page(MACHINE3_PAGE), PRI_GAME_MODE5, D_QUEUED
 wet ok: page(MACHINE3_PAGE), PRI_GAME_MODE5, D_QUEUED+D_TIMEOUT
 wet nok: page(MACHINE3_PAGE), PRI_GAME_MODE5, D_QUEUED+D_TIMEOUT
 lostmine: page(MACHINE3_PAGE), PRI_GAME_MODE3, D_QUEUED+D_TIMEOUT
-redtgt kickback: page(MACHINE3_PAGE), PRI_GAME_QUICK3, D_QUEUED+D_TIMEOUT
 wp5xpf running: page(MACHINE3_PAGE), runner, PRI_GAME_MODE3, D_QUEUED
-riverletter: page(MACHINE3_PAGE), PRI_GAME_QUICK3, D_QUEUED+D_TIMEOUT+D_RESTARTABLE
-river complete: page(MACHINE3_PAGE), PRI_GAME_MODE3, D_QUEUED+D_TIMEOUT
-combo drop: page(MACHINE3_PAGE), PRI_GAME_QUICK3, D_TIMEOUT
-combo rloop: page(MACHINE3_PAGE), PRI_GAME_QUICK3, D_TIMEOUT
-combo3: page(MACHINE3_PAGE), PRI_GAME_QUICK3, D_TIMEOUT
-combo4: page(MACHINE3_PAGE), PRI_GAME_QUICK3, D_TIMEOUT
-map start: page(MACHINE3_PAGE), PRI_GAME_QUICK6, D_QUEUED+D_PAUSE
+wp5xpf running2: page(MACHINE3_PAGE), runner, PRI_GAME_MODE3, D_QUEUED
+riverletter: page(MACHINE3_PAGE), PRI_GAME_LOW5, D_QUEUED+D_TIMEOUT+D_RESTARTABLE
+river complete: page(MACHINE3_PAGE), PRI_GAME_LOW6, D_QUEUED+D_TIMEOUT
+combo drop: page(MACHINE3_PAGE), PRI_GAME_LOW5, D_TIMEOUT
+combo rloop: page(MACHINE3_PAGE), PRI_GAME_LOW5, D_TIMEOUT
+combo3: page(MACHINE3_PAGE), PRI_GAME_LOW5, D_TIMEOUT
+combo4: page(MACHINE3_PAGE), PRI_GAME_LOW5, D_TIMEOUT
+map intro: page(MACHINE3_PAGE), PRI_GAME_QUICK6, D_QUEUED
 map found: page(MACHINE3_PAGE), PRI_GAME_MODE5, D_QUEUED
 map cow: page(MACHINE3_PAGE), PRI_GAME_MODE5, D_QUEUED
-wiz start: page(MACHINE3_PAGE), PRI_GAME_MODE3, D_QUEUED+D_PAUSE
+wiz intro: page(MACHINE3_PAGE), PRI_GAME_MODE3, D_QUEUED
 wiz mb running: page(MACHINE3_PAGE), runner, PRI_GAME_MODE5, D_QUEUED
-hz1: page(MACHINE3_PAGE), PRI_GAME_MODE2, D_TIMEOUT
-hz2: page(MACHINE3_PAGE), PRI_GAME_MODE2, D_TIMEOUT
-hz3: page(MACHINE3_PAGE), PRI_GAME_MODE2, D_TIMEOUT
-hz4: page(MACHINE3_PAGE), PRI_GAME_MODE2, D_TIMEOUT
-hz5: page(MACHINE3_PAGE), PRI_GAME_MODE2, D_TIMEOUT
-hz6: page(MACHINE3_PAGE), PRI_GAME_MODE2, D_TIMEOUT
-hz7: page(MACHINE3_PAGE), PRI_GAME_MODE2, D_TIMEOUT
-secret: page(MACHINE3_PAGE), PRI_GAME_MODE3, D_TIMEOUT
+hz1: page(MACHINE3_PAGE), PRI_GAME_LOW5, D_TIMEOUT
+hz2: page(MACHINE3_PAGE), PRI_GAME_LOW5, D_TIMEOUT
+hz4: page(MACHINE3_PAGE), PRI_GAME_LOW5, D_TIMEOUT
+hz5: page(MACHINE3_PAGE), PRI_GAME_LOW5, D_TIMEOUT
+hz6: page(MACHINE3_PAGE), PRI_GAME_LOW5, D_TIMEOUT
+hz7: page(MACHINE3_PAGE), PRI_GAME_LOW5, D_TIMEOUT
+secret: page(MACHINE3_PAGE), PRI_GAME_LOW6, D_TIMEOUT
 skill running: page(MACHINE3_PAGE), runner, PRI_GAME_MODE1, D_QUEUED
-skill: page(MACHINE3_PAGE), PRI_GAME_MODE5, D_QUEUED+D_TIMEOUT
-fall nok: page(MACHINE3_PAGE), PRI_GAME_MODE5, D_QUEUED+D_TIMEOUT
-
+skill ramp: page(MACHINE3_PAGE), PRI_GAME_MODE5, D_QUEUED+D_TIMEOUT
+skill bigf: page(MACHINE3_PAGE), PRI_GAME_MODE5, D_QUEUED+D_TIMEOUT
+#fall nok: page(MACHINE3_PAGE), PRI_GAME_MODE5, D_QUEUED+D_TIMEOUT
+wpmano intro: page(MACHINE3_PAGE), PRI_GAME_QUICK3, D_QUEUED+D_ABORTABLE
+wp5x intro: page(MACHINE3_PAGE), PRI_GAME_QUICK3, D_QUEUED+D_ABORTABLE
+eb score: page(MACHINE3_PAGE), PRI_GAME_QUICK3, D_QUEUED+D_TIMEOUT+D_ABORTABLE
+dam ok: page(MACHINE3_PAGE), PRI_GAME_QUICK3, D_QUEUED+D_TIMEOUT+D_ABORTABLE
 
 
 
@@ -573,13 +594,22 @@ wpoolblue: whirlpool 1, whirlpool 2, whirlpool 3, whirlpool 4, whirlpool 5, whir
 # Lamp effects
 ##########################################################################
 [leffs]
-lock kick: PRI_LEFF2, page(MACHINE3_PAGE)
+lock kick: shared, PRI_LEFF2, page(MACHINE3_PAGE)
 lostmine kick: shared, PRI_LEFF2, page(MACHINE3_PAGE)
 fl ulpf: shared, PRI_LEFF2, page(MACHINE3_PAGE)
-fl lmountain: shared, PRI_LEFF2, page(MACHINE3_PAGE)
 fl cave: shared, PRI_LEFF2, page(MACHINE3_PAGE)
+fl lmountain: shared, PRI_LEFF2, page(MACHINE3_PAGE)
 fl bigfoot: shared, PRI_LEFF2, page(MACHINE3_PAGE)
 fl wpool: shared, PRI_LEFF2, page(MACHINE3_PAGE)
+fl wetwilly: shared, PRI_LEFF2, page(MACHINE3_PAGE)
+fl bgraft: shared, PRI_LEFF2, page(MACHINE3_PAGE)
+fl bgriders: shared, PRI_LEFF2, page(MACHINE3_PAGE)
+fl bfdiv: shared, PRI_LEFF2, page(MACHINE3_PAGE)
+fl mainramp: shared, PRI_LEFF2, page(MACHINE3_PAGE)
+fl rapidsmade: shared, PRI_LEFF2, page(MACHINE3_PAGE)
+fl all pf loop: shared, PRI_LEFF2, page(MACHINE3_PAGE)
+fl pf ltor: shared, PRI_LEFF2, page(MACHINE3_PAGE)
+fl pf rtol: shared, PRI_LEFF2, page(MACHINE3_PAGE)
 hz disdrop: shared, PRI_LEFF2, page(MACHINE3_PAGE), LAMPS(HZDISDROP)
 bftg: shared, PRI_LEFF2, page(MACHINE3_PAGE), LAMPS(BIGFOOTBANK)
 skilllock: shared, PRI_LEFF3, page(MACHINE3_PAGE), LAMPS(LOCKSGREEN)
@@ -595,8 +625,6 @@ tgttoggle: shared, PRI_LEFF3, page(MACHINE3_PAGE), LAMPS(GOLDRUSH)
 # Timers
 ##########################################################################
 [timers]
-multimill:
-wpool:
 lramp:
 lrampdown:
 lloop:

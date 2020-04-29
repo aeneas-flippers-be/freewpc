@@ -22,10 +22,10 @@
 
 U8 combos_shots;
 
-__local__ U8 combos_nrdrops;
-__local__ U8 combos_nrrloops;
-__local__ U8 combos_3made;
-__local__ U8 combos_4made;
+extern U8 combos_nrdrops;  //extern in bonus.c
+extern U8 combos_nrrloops;  //extern in bonus.c
+extern U8 combos_3made;    //extern in bonus.c
+extern U8 combos_4made;   //extern in bonus.c
 
 void combos_stop (void)
 {
@@ -120,7 +120,8 @@ CALLSET_ENTRY (combos, left_ramp_made)
 
 
 /* only as 3rd shot and then end combo */
-CALLSET_ENTRY (combos, dev_lock_enter)
+//ALLSET_ENTRY (combos, dev_lock_enter)
+/*
 {
 	if (!global_flag_test (GLOBAL_FLAG_RAFTMODE))
 		return;
@@ -131,6 +132,7 @@ CALLSET_ENTRY (combos, dev_lock_enter)
 	}
 	combos_stop ();
 }
+*/
 
 CALLSET_ENTRY (combos, right_loop_made)
 {

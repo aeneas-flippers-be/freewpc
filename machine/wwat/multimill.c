@@ -19,10 +19,10 @@
  */
 
 /*
-multimillion on left ramp
+RULES: multimillion on left ramp
 	- only during single ball
 	- shooting left ramp and letting ball go down to right inlane lights timer for multimillion
-	- shooting left ramp again scores mm, increases with additional shots
+	- shooting left ramp again scores mm, which increases with additional shots until 5M
 	- disabled when shooting a ramp on upf
 	- sound on first time right inlane when multimill starts
 
@@ -43,20 +43,27 @@ switches:
 
 #include <freewpc.h>
 
-U8 mmil_count;
+extern U8 mmil_count;
 
+void mmil_task (void)
+{
+	lamp_on (LM_RAMP_MIL);
+	task_sleep_sec (5);
+	lamp_off (LM_RAMP_MIL);
+	task_exit ();
+}
 
 void mmil_jackpot (void)
 {
 	bounded_increment (mmil_count, 5);
-
-//	score_multiple (SC_1M, mmil_count);
+	score_multiple (SC_1M, mmil_count);
 
 	if (mmil_count < 5)
 		speech_start (SND_OOH, SL_2S);
 	else 
 		speech_start (SND_WAYTOGO, SL_3S);
 
+	leff_start (LEFF_FL_PF_LTOR);
 	deff_start (DEFF_MMILCOLLECTED);
 }
 
@@ -66,25 +73,24 @@ CALLSET_ENTRY (mmil, left_ramp_made)
 	if (!global_flag_test (GLOBAL_FLAG_RAFTMODE))
 		return;
 
-	if (free_timer_test (TIM_MULTIMILL))
+	if (task_find_gid (GID_MMIL))
 	{
 		mmil_jackpot ();
-		free_timer_stop (TIM_MULTIMILL);
+//		free_timer_stop (TIM_MULTIMILL);
 	}
 	else
 	{
 		mmil_count = 0;
 		speech_start (SND_MULTIMILL, SL_3S);
 	}
-	free_timer_start (TIM_MULTIMILL, TIME_4S);
+	task_create_gid1 (GID_MMIL, mmil_task);
 }
 
-CALLSET_ENTRY (mmil, lamp_update)
+
+CALLSET_ENTRY (mmil, end_ball, tilt)
 {
-	if (free_timer_test (TIM_MULTIMILL))
-		lamp_on (LM_RAMP_MIL);
-	else
-		lamp_off (LM_RAMP_MIL);
+	task_kill_gid (GID_MMIL);
+	lamp_off (LM_RAMP_MIL);
 }
 
 CALLSET_ENTRY (mmil, start_ball)

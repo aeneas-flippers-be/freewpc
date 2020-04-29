@@ -1,0 +1,303 @@
+/*
+ * written by Aeneas Verhe
+ *
+ * Driver for a bidirectional motor with two switches as used in head of bigfoot. 
+ * One solenoid is enable motor. Other solenoid is to turn direction cw/ccw while it's enabled by first coil.
+ * Head can rotate clockwise and counterclockwise. Position switches to look to front or back of playfield. 
+ * Head can also continue turning in both directions until stop command is given.
+ */
+
+@@class bivar3
+@@parameter dir_sol
+@@parameter enable_sol
+@@parameter back_sw
+@@parameter front_sw
+
+
+
+@@
+@@file @self.h
+@@
+
+#include <freewpc.h>
+
+typedef enum {
+	HEAD_UNKNOWN,
+	HEAD_BACK,
+	HEAD_FRONT,
+} @self_state_t;
+
+
+typedef enum {
+	SELF_UNKNOWN,
+	SELF_BACK,
+	SELF_FRONT,
+} @self_location_t;
+
+
+extern __fastram__ @self_state_t @self_state;
+extern  @self_location_t @self_location;
+
+void @self_go_back_ccw (void);
+void @self_go_front_ccw (void);
+void @self_go_back_cw (void);
+void @self_go_front_cw (void);
+void @self_stop (void);
+
+
+
+
+@@
+@@file @self.c
+@@
+
+#include <freewpc.h>
+#include "@self.h"
+
+@self_state_t @self_state;
+@self_location_t @self_location;
+
+void @self_go_ccw_monitor (void)
+{
+	sol_enable (@dir_sol);
+	task_sleep_sec (10);
+	sol_disable (@dir_sol);
+	task_exit ();
+}
+
+void @self_go_cw_monitor (void)
+{
+	sol_enable (@enable_sol);
+	sol_enable (@dir_sol);
+	task_sleep_sec (10);
+	sol_disable (@dir_sol);
+	sol_disable (@enable_sol);
+	task_exit ();
+}
+
+
+void @self_stop (void)
+{
+	dbprintf ("Stopping\n");
+	task_kill_gid (GID_@self_CW_MONITOR);
+	task_kill_gid (GID_@self_CCW_MONITOR);
+	sol_disable (@enable_sol);
+	sol_disable (@dir_sol);
+}
+
+void @self_go_back_ccw (void)
+{
+	if (@self_state != HEAD_BACK)
+	{
+		@self_state = HEAD_BACK;
+		task_recreate_gid (GID_@self_CCW_MONITOR, @self_go_ccw_monitor);
+	}
+}
+
+void @self_go_front_ccw (void)
+{
+	if (@self_state != HEAD_FRONT)
+	{
+		@self_state = HEAD_FRONT;
+		task_recreate_gid (GID_@self_CCW_MONITOR, @self_go_ccw_monitor);
+	}
+}
+
+void @self_go_back_cw (void)
+{
+	if (@self_state != HEAD_BACK)
+	{
+		@self_state = HEAD_BACK;
+		task_recreate_gid (GID_@self_CW_MONITOR, @self_go_cw_monitor);
+	}
+}
+
+void @self_go_front_cw (void)
+{
+	if (@self_state != HEAD_FRONT)
+	{
+		@self_state = HEAD_FRONT;
+		task_recreate_gid (GID_@self_CW_MONITOR, @self_go_cw_monitor);
+	}
+}
+
+CALLSET_ENTRY (@self, @back_sw)
+{
+	if (@self_state == HEAD_BACK)
+	{
+		@self_stop ();
+		@self_location = SELF_BACK;
+	}
+}
+
+CALLSET_ENTRY (@self, @front_sw)
+{
+	if (@self_state == HEAD_FRONT)
+	{
+		@self_stop ();
+		@self_location = SELF_FRONT;
+	}
+}
+
+CALLSET_ENTRY (@self, tilt, test_start)
+{
+	@self_stop ();
+}
+
+CALLSET_ENTRY (@self, amode_start)
+{
+	@self_state = HEAD_UNKNOWN;
+	@self_go_back_cw ();
+}
+
+
+
+
+
+
+
+
+
+@@
+@@file @self_test.c
+@@
+
+ 
+/***********************************************************************
+ * @self test:
+ ***********************************************************************/
+ 
+
+#include <freewpc.h>
+#include <window.h>
+#include <test.h>
+#include "@self.h"
+
+
+enum {
+FIRST_TEST = 0,
+CCW = FIRST_TEST,
+CW,
+STOP,
+LAST_TEST = STOP
+} @self_test_command;
+
+
+
+char *@self_test_short_names[] = {
+"CCW",
+"CW",
+"STOP"
+};
+
+extern  @self_location_t @self_location;
+
+
+
+
+void @self_test_draw (void) {
+dmd_alloc_low_clean ();
+//draw title
+font_render_string_center (&font_var5, 64, 2, "@SELF TEST");
+dmd_draw_horiz_line ((U16 *)dmd_low_buffer, 5);
+dmd_draw_horiz_line ((U16 *)dmd_low_buffer, 25);
+
+
+//display status of face optos
+font_render_string_center (&font_var5, 4, 13, "FACE");
+if (@self_location == 1) 
+	sprintf ("BACK X");
+else
+	sprintf ("BACK O");
+font_render_string_center (&font_var5, 44, 13, sprintf_buffer);
+
+if (@self_location == 2) 
+	sprintf ("FRONT X");
+else
+	sprintf ("FRONT O");
+font_render_string_center (&font_var5, 84, 13, sprintf_buffer);
+
+//name of currently running test
+sprintf(@self_test_short_names[@self_test_command]);
+font_render_string_left (&font_var5, 0, 27, sprintf_buffer);
+
+dmd_show_low ();
+}
+
+
+void @self_test_init (void) { 
+	@self_test_command = STOP; 
+	if (switch_poll_logical (@back_sw) ) @self_location = SELF_BACK;
+	if (switch_poll_logical (@front_sw) ) @self_location = SELF_FRONT;
+}
+
+
+void @self_test_thread (void) {
+	for (;;) {
+		task_sleep (TIME_1S);//this was set to run faster but seemed to cause problems
+		@self_test_draw ();
+	}
+}
+
+//up test button pressed
+void @self_test_up (void) {
+	if (@self_test_command < LAST_TEST)
+		@self_test_command++;
+}
+
+//down test button pressed
+void @self_test_down (void) {
+	if (@self_test_command > FIRST_TEST)
+		@self_test_command--;
+}
+
+//escape test button pressed
+void @self_test_escape (void) {
+	// stop everything
+	@self_stop();
+	window_pop();
+}
+
+
+
+//enter test button pressed
+void @self_test_enter (void) {
+	sound_send (SND_TEST_ENTER);
+	switch (@self_test_command) {
+		case CCW:
+			if (@self_location != SELF_BACK) @self_go_back_ccw();
+			else
+				@self_go_front_ccw();
+			@self_test_command = STOP;
+			break;
+		case CW:
+			if (@self_location != SELF_BACK) @self_go_back_cw();
+			else
+				@self_go_front_cw();
+			@self_test_command = STOP;
+			break;
+		case STOP:
+			@self_stop();
+			@self_test_command = STOP;
+		break;
+	}
+}
+
+struct window_ops @self_test_window = {
+	DEFAULT_WINDOW,
+	.init = @self_test_init,
+	.draw = @self_test_draw,
+	.up = @self_test_up,
+	.down = @self_test_down,
+	.enter = @self_test_enter,
+	.escape = @self_test_escape,
+	.thread = @self_test_thread,
+};
+
+
+struct menu @self_test_item = {
+	.name = "@SELF TEST", // needs @SELF for uppercase version of 'self' as test menu font doesn't have lower-case letters.
+	.flags = M_ITEM,
+	.var = { .subwindow = { &@self_test_window, NULL } },
+};
+

@@ -29,7 +29,7 @@
 
 CALLSET_ENTRY (eb, sw_extraball)
 {
-	if (lamp_test (MACHINE_EXTRA_BALL_LAMP))
+	if (in_game && lamp_test (MACHINE_EXTRA_BALL_LAMP))
 	{
 		sound_start (ST_SAMPLE, SND_EBSOUND, SL_3S, PRI_GAME_QUICK3);
 		collect_extra_ball ();

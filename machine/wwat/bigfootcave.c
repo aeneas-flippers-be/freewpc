@@ -19,25 +19,20 @@
  */
 
 /*
-Shoot bigfoot cave after lighting it to collect items
+RULES:
+Shoot bigfoot cave after lighting it to collect items - flashlight, key, camera, map, cow, bigfoot
 items can be used in other modes
-get camera to spot hotfoot
+get camera to spot bigfoot
 cow at 20 spots
 */
 
 
 #include <freewpc.h>
+#include <status.h>
 #include "bigfootcave.h"
 
-__local__ U8 caveshots;
-
-void twobank_off (void)
-{
-	global_flag_off (GLOBAL_FLAG_BIGFOOTTGT1);
-	global_flag_off (GLOBAL_FLAG_BIGFOOTTGT2);
-	lamp_tristate_off (LM_2BANK_UP);
-	lamp_tristate_off (LM_2BANK_LOW);
-}
+extern U8 caveshots;
+extern U8 bigfoot_found;
 
 
 void cave_award_deff (void)
@@ -73,13 +68,6 @@ void cave_award_deff (void)
 			break;
 	}
 
-	task_pid_t tp = task_find_gid (GID_BIGFOOT);
-	if (tp) 
-	{
-		score (SC_250K);
-		font_render_string_center (&font_fixed6, 80, 28, "250K BONUS");
-	}
-
 	dmd_show_low ();
 	task_sleep_sec (1);
 	deff_exit ();
@@ -95,9 +83,9 @@ void cave_resetitems (void)
 
 void cave_award (void)
 {
-	global_flag_off (GLOBAL_FLAG_BIGFOOTLIT);	
+	global_flag_off (GLOBAL_FLAG_BIGFOOTLIT);
 
-	bfh_showface_cw ();
+//	bfh_showface_cw ();
 	leff_start (LEFF_FL_CAVE);
 
 	bounded_increment (caveshots, 255);
@@ -122,7 +110,7 @@ void cave_award (void)
 			break;
 		case 5:
 			flag_on (FLAG_BFCMAP);
-			global_flag_on (GLOBAL_FLAG_WPOOLLIT);
+//			global_flag_on (GLOBAL_FLAG_WPOOLLIT);
 			speech_start (SND_HEYMAP, SL_4S);
 			break;
 		case 20:
@@ -131,6 +119,7 @@ void cave_award (void)
 			break;
 		default:
 			speech_start (SND_CAMERASOUND, SL_2S);
+			bounded_increment (bigfoot_found, 255);
 			break;
 	}
 }
@@ -140,30 +129,46 @@ CALLSET_ENTRY (bfcave, sw_bigfoot_cave)
 {
 	if (!global_flag_test (GLOBAL_FLAG_RAFTMODE))
 		return;
-
+	
 	if (global_flag_test (GLOBAL_FLAG_BIGFOOTLIT))
 	{
 		cave_award ();
 	}
 	else
 	{
+		flasher_pulse (FLASH_BIGFOOT_CAVE_FL);
 		score (SC_20K);
 	}
 }
 
-
 CALLSET_ENTRY (bfcave, start_ball)
 {
-	global_flag_off (GLOBAL_FLAG_BIGFOOTLIT);	
-	twobank_off ();
+	global_flag_off (GLOBAL_FLAG_BIGFOOTLIT);
 }
 
 CALLSET_ENTRY (bfcave, start_player)
 {
-	global_flag_off (GLOBAL_FLAG_BIGFOOTLIT);	
 	cave_resetitems ();
 	caveshots = 0;
+	bigfoot_found = 0;
 }
 
+
+CALLSET_ENTRY (bfcave, status_report)
+{
+	status_page_init ();
+	font_render_string (&font_mono5, 2, 2, "FOUND");
+
+	if (flag_test (FLAG_BFCMAP))
+		font_render_string_center (&font_mono5, 64, 8, "MAP");
+	if (flag_test (FLAG_BFCKEY))
+		font_render_string_center (&font_mono5, 64, 14, "KEY");
+	if (flag_test (FLAG_BFCLIGHT))
+		font_render_string_center (&font_mono5, 64, 20, "FLASHLIGHT");
+	if (flag_test (FLAG_BFCCAMERA))
+		font_render_string_center (&font_mono5, 64, 26, "CAMERA");
+
+	status_page_complete ();
+}
 
 

@@ -1,7 +1,6 @@
 #
 # Game specific Makefile extensions
 #
-
 MACHINE_FILE = wwat.md
 
 # Define the name of the GAME_ROM.  This is
@@ -36,7 +35,6 @@ ROM_PAGE_COUNT = 32
 # the pinmame roms directory.
 #
 #################################################
-
 MACHINE_MAJOR = 0
 MACHINE_MINOR = 1
 
@@ -78,15 +76,28 @@ IMAGE_MAP += $(M)/ww.ild
 #GAME_INCLUDES =
 ################################################### 
 
-GAME_OBJS = helper.o bigfootdiv.o bigfoottgt.o dammode.o rafts.o redtgt.o wp5xpf.o wpoolmodes.o lock.o extraball.o wpwpchall.o mapmode.o bigfoothead.o
 
-GAME_PAGED_OBJS = bigfootcave.o combos.o jets.o kickback.o lanes.o riverclass.o rivertgt.o simpleshots.o rafthurryup.o
+# page .text
+GAME_OBJS = vars.o bbash.o bigfoothead.o bigfootdiv.o bigfoottgt.o cavehurry.o deffsobj.o jets.o \
+kickback.o lock.o riverhurry.o redtgt.o wpoolmodes.o rafts.o
 
-GAME2_OBJS = goldrush.o lostmine.o multimill.o mball.o quickmb.o skill.o wpmanoverb.o wizard.o wetwilly.o waterfall.o
+#this is about 30% full from the OS - page 59 
+#also called MACHINE_PAGE in the file definition 
+GAME_PAGED_OBJS = bigfootcave.o combos.o lanes.o rivertgt.o simpleshots.o
 
-GAME3_OBJS = leffs.o bonus.o deffs3.o amode.o
+#also called MACHINE2_PAGE - page 55
+GAME2_OBJS = dammode.o extraball.o goldrush.o lostmine.o multimill.o mball.o quickmb.o riverclass.o \
+skill.o wetwilly.o wizard.o wpmanoverb.o wp5xpf2.o wpwpchall.o
 
-GAME4_OBJS = 
+#also called MACHINE3_PAGE - page 54
+GAME3_OBJS = amode.o bonus.o deffs3.o leffs.o
+
+#also called MACHINE4_PAGE - page 53
+GAME4_OBJS = ww_modes.o
+#tester.o
+
+#also called MACHINE5_PAGE - page 52
+GAME5_OBJS = 
 
 GAME_TEST_OBJS = 
 
