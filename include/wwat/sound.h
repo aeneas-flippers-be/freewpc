@@ -6,11 +6,19 @@
 #ifndef _MACH_SOUND_H
 #define _MACH_SOUND_H
 
-
+/* sounds below are used
+ * the completely list of samples is at the bottom
+ * tabbed sounds in that list are used
+ */
 
 /*   */
 #define SND_BGFT_GR1	0x014D
 #define SND_BGFT_GR2	0x014E
+
+/* bbash.c */
+#define MUS_HURRYMODE2		0x13
+#define SND_ITSABOULDERBASH	0x0166
+
 
 /* bigfootcave */
 #define SND_HEYFLASHLIGHT	0x0143
@@ -27,6 +35,10 @@
 #define SND_BONUSTING4	0xD8
 #define SND_GAMEOVER	0x30
 #define MUS_MODE_SLOW_1		0x15
+
+/* cavehurry */
+#define MUS_HURRY_MODE9 	0x42
+#define SND_OK_7	0xE2
 
 /* combos */
 #define SND_OK_3	0xB4
@@ -196,6 +208,7 @@
 #define SND_WHISTLE		0xE6
 #define SND_SCREAM1		0x0102
 #define SND_SCREAM6		0x0108
+#define SND_SPLASH_7	0xDC
 
 /* skill.c */
 #define MUS_PLUNGER 		0x02
@@ -217,11 +230,23 @@
 #define SND_YAWIENER		0x0130
 
 
-
-
 /* wp5xpf.c */
 #define MUS_FRENZY_2		0x47
 #define SND_5TIMESFUN		0x0111
+
+/* wp5xpf2.c */
+#define SND_YIHA	0x015B
+#define SND_YOW	0x015C
+#define SND_SCREAM	0x015D
+#define SND_SCREAM2	0x015E
+#define SND_YOW2	0x015F
+#define SND_YIHA2	0x0160
+#define SND_YAW	0x0161
+#define SND_YIAW	0x0162
+#define SND_DOG2	0x0163
+#define SND_MAW	0x0164
+#define SND_YAW2	0x0165
+
 
 /* wpwpch */
 #define MUS_WPOOL_2		0x10
@@ -232,6 +257,7 @@
 #define SND_GETEXTRABALL	0x012D
 #define SND_ENTERWP1		0x86
 #define SND_SPLASH	0xB7
+#define SND_OK_5	0xB9
 
 /* wpmanoverb  */
 #define MUS_MANOVERB_1		0x11
@@ -301,7 +327,7 @@
 	#define MUS_WPOOL_2		0x10
 	#define MUS_MANOVERB_1		0x11
 	#define MUS_HURMODE_RELOCK1		0x12
-#define MUS_HURRYMODE2		0x13
+	#define MUS_HURRYMODE2		0x13
 	#define MUS_HURMODE_RELOCK2		0x14
 	#define MUS_MODE_SLOW_1		0x15
 	#define MUS_MODE_FRENZY_1		0x16
@@ -337,7 +363,7 @@
 	#define MUS_HURRY_MODE6 	0x3F  #much faster
 	#define MUS_HURRY_MODE7 	0x40  #much faster
 	#define MUS_HURRY_MODE8 	0x41  #much faster
-#define MUS_HURRY_MODE9 	0x42  #much faster
+	#define MUS_HURRY_MODE9 	0x42  #much faster
 
 #define MUS_RELOCKBALL	0x43		#hurry up relaunch ? or wet willy last
 #define MUS_RELOCKBALL2	0x44		#hurry up relaunch
@@ -418,7 +444,7 @@
 	#define SND_SPLASH	0xB7
 #define SND_BFMATCH	0xB8
 
-#define SND_OK_5	0xB9
+	#define SND_OK_5	0xB9
 
 	#define SND_BGARDEN_COIN_1	0xBA
 	#define SND_BGARDEN_COIN_2	0xBB
@@ -461,7 +487,7 @@
 #define SND_SHORTLOOP	0xD9
 #define SND_BENG	0xDA
 #define SND_DENGECHO	0xDB
-#define SND_SPLASH_7	0xDC
+	#define SND_SPLASH_7	0xDC
 
 #define SND_EXTRABALL_2	0xDD
 
@@ -470,7 +496,7 @@
 #define SND_WIZZ	0xE0
 
 #define SND_WATRR	0xE1
-#define SND_OK_7	0xE2
+	#define SND_OK_7	0xE2
 #define SND_OK_8	0xE3
 #define SND_BENG	0xE5
 	#define SND_WHISTLE	0xE6
@@ -590,20 +616,20 @@
 
 #define SND_HOWDYWET	0x0159
 
-#define SND_YIHA	0x015B
-#define SND_YOW	0x015C
-#define SND_SCREAM	0x015D
-#define SND_SCREAM2	0x015E
-#define SND_YOW2	0x015F
-#define SND_YIHA2	0x0160
-#define SND_YAW	0x0161
-#define SND_YIAW	0x0162
-#define SND_DOG	0x0163
-#define SND_MAW	0x0164
-#define SND_YAW2	0x0165
+	#define SND_YIHA	0x015B
+	#define SND_YOW	0x015C
+	#define SND_SCREAM	0x015D
+	#define SND_SCREAM2	0x015E
+	#define SND_YOW2	0x015F
+	#define SND_YIHA2	0x0160
+	#define SND_YAW	0x0161
+	#define SND_YIAW	0x0162
+	#define SND_DOG2	0x0163
+	#define SND_MAW	0x0164
+	#define SND_YAW2	0x0165
 
 
-#define SND_ITSABOULDERBASH	0x0166
+	#define SND_ITSABOULDERBASH	0x0166
 
 	#define SND_BGFT_LAUGH1	0x0167
 	#define SND_BGFT_LAUGH2	0x0168
