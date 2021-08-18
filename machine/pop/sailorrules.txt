@@ -1,0 +1,69 @@
+Sailor - New rules for the Popeye playfield
+
+
+Goal is to save Olive ?
+
+
+
+
+Original rules:
+POPEYE => light spinach can 
+OYL => bonusx + light fight bluto (right hole) => fight bluto )= 4x 
+SEAHAG => ramp collect item )= 4x => 4b mb (left hole start - 4 shots to complete)
+Left hole / upper pf => animal kicker => loop collect  )= 5x => stampede hurryup
+light lock => lock ball )= 3x => 3b mb (ramp, mouth)
+
+
+
+
+Do more with upper pf: 3 lanes, targets, 2 exits
+Animals: rhino panda tiger eagle dolphin
+Geomap: aphrosesia (rhino) - fashionation (tiger) - l'eagleland (eagle) - pandemonia (panda) - sushi sea (dolphin)
+4 items: popeye can opener, baby bottle, wimpie ketchup, olive flower
+4 fights: never green, earth paving, spillco oil, blutonium waste
+sea hag 2 tgts
+
+
+
+NEW RULES
+========
+
+Ideas
+
+Fight bluto - earn spinach to get power
+
+Collect 4 items - sail to island - collect correct animal
+Sea target sails to another island ?
+
+Skill shot - wheel to select award, then shoot ramp or loop to collect it, TODO get things to fight ? get olives heart ? collect 3 colors ?
+
+Bumpers => light bluto fight  (30 / 60 / 90 / 120)
+
+Bluto fight: 
+- hit lock targets
+- lock 3 balls ?
+- collect spinach for timer extra power ?
+
+
+
+IMPLEMENTED
+
+Loops: Inlanes / loop arrows / gates: similar to original rules
+Inlane light alternates with flipper buttons, starts with right inlane after wheel
+Lit inlane lights loop shot arrow
+Shooting lit loop opens top gate and awards loop shot
+TODO: loop shot award, sounds
+
+OYL: Complete OYL rollovers, 1k rollover, 20k completed
+TODO award rollover complete, sounds
+
+Poptgts: light pop-eye targets, 1k target, 250k complete
+TODO award completion, sounds
+
+Skillwheel: rotate wheel and detect ball
+TODO handle multiple balls, sounds, detect hole
+
+
+
+
+
