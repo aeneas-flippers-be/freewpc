@@ -25,7 +25,8 @@
 # and last frame only, and just use a for loop to render each
 # frame.
 
-#IMG_FLIPLOGO: machine/wwat/IMG/fliplogo.pgm
+IMG_FLIPLOGO: machine/crea/IMG/fliplogo.pgm
+
 #IMG_BFOOTLOGO: machine/wwat/IMG/bigfootlogo.pgm
 #IMG_WATER1: machine/wwat/IMG/water1.pgm
 #IMG_WATER2: machine/wwat/IMG/water2.pgm

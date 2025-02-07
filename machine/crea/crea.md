@@ -1,5 +1,5 @@
 #--------------------------------------------------------------------------
-# Machine description for Creature
+# Machine description for MovieTime
 # (C) Copyright 2021 Aeneas Verhe
 #
 # See tools/genmachine for more information about the format of this file.
@@ -11,7 +11,7 @@
 # General section (before a [section] header is given.
 # Miscellaneous parameters are specified here.
 ##########################################################################
-Title: creature
+Title: movietime
 include platform/wpc/wpc-fliptronic.md
 
 Pinmame-Zip: cftbl_l4.zip
@@ -25,14 +25,14 @@ Pinmame-ROM: creat_l4.rom
 # some other means.
 ##########################################################################
 
-define MACHINE_CREA
+define MACHINE_MOVIE
 define MACHINE_NUMBER 588
-#define MACHINE_BALL_SAVE_TIME 1
+define MACHINE_BALL_SAVE_TIME 1
 #define MACHINE_CUSTOM_AMODE
 
 define FREE_ONLY
 
-#define DEVELOPMENT_MENU
+define DEVELOPMENT_MENU
 
 ##########################################################################
 # Lamp Description
@@ -50,14 +50,14 @@ define FREE_ONLY
 15: 
 16: 
 17: 
-18: admitone, shoot-again, ball-save
-21: kkiss
-22: ikiss
-23: s1kiss
-24: s2kiss
-25: tenmillion
-26: twentymillion
-27: thirtymillion
+18: admitone
+21: kissk
+22: kissi
+23: kisss1
+24: kisss2
+25: tenmil
+26: twentymil
+27: thirtymil
 28: specialsa
 31: startmegamenu
 32: playgroundaward
@@ -65,12 +65,12 @@ define FREE_ONLY
 34: slide
 35: rightsearch
 36: rightvideo
-37: rightstartmoviea
+37: rightstartmovie
 38: megamenu
 41: lips
 42: leftsearch
 43: leftvideo
-44: leftstartmoviea
+44: leftstartmovie
 45: comboaward
 46: parkingok
 47: moveyourcar
@@ -83,14 +83,14 @@ define FREE_ONLY
 56: Jackpot
 57: Rescue
 58: RestartMultiball
-61: FreePass
+61: FreePass, shoot-again, ball-save
 62: BuildCombo
 63: UnlimitedMillions
 64: CreatureFeature
 65: ExtraBallCountdown
 66: BigMillions
 67: MovieMadness
-68: SnackAttack
+68: CountToFeature
 71: C
 72: R
 73: E
@@ -132,46 +132,47 @@ define FREE_ONLY
 #
 ##########################################################################
 [switches]
-
+11: right flipper, button, intest, c_decl(sw_right_button), noscore
+12: left flipper, button, intest, c_decl(sw_left_button), noscore
 13: start button, yellow, start-button, cabinet, intest
 14: plumb bob tilt, c_decl(sw_tilt), cabinet, tilt, ingame, novalid
-15: topleftrollover, ingame
+15: top left, ingame
 16: left subway, ingame
 17: center subway, ingame
 18: center shot, ingame
 21: slam tilt, slam-tilt, ingame, cabinet, novalid, noscore
 22: coin door closed, noscore, novalid
-25: paidp
-26: paida
-27: paidi
-28: paidid
-33: centerjet
-34: rightpopper
-35: rightrampenter
-36: leftrampenter
-37: lowerrightpopper
-38: rampupdown
-41: cola
-42: hotdog
-43: popcorn
-44: icecream
-45: leftjet
-46: rightjet
-47: leftslingshot
-48: rightslingshot
-51: leftoutlanes
-52: leftinlane
-53: rightinlane
-54: rightoutLane
+25: paidp, ingame
+26: paida, ingame
+27: paidi, ingame
+28: paidd, ingame
+33: centerjet, ingame
+34: slide popper, ingame, opto, edge
+35: rightrampenter, ingame
+36: leftrampenter, ingame
+37: bowl popper, ingame, opto, edge, noscore
+38: rampupdown, ingame, noscore
+41: cola, ingame, standup
+42: hotdog, ingame, standup
+43: popcorn, ingame, standup
+44: icecream, ingame, standup
+45: leftjet, ingame
+46: rightjet, ingame
+47: left slingshot, ingame
+48: right slingshot, ingame
+51: left outlane, ingame
+52: left inlane, ingame
+53: right inlane, ingame
+54: right outLane, ingame
 55: outhole, outhole, service, novalid, intest, noscore
 56: Trough 1, noscore, novalid
 57: Trough 2, noscore, novalid
 58: Trough 3, noscore, novalid
-61: rightrampexit
-62: leftrampexit
-63: centerlaneexit
-64: upperramp
-65: bowl
+61: rightrampexit, ingame
+62: leftrampexit, ingame
+63: centerlaneexit, ingame
+64: upperramp, ingame
+65: bowl, ingame
 66: ball shooter, edge, shooter, novalid, noscore, debounce(TIME_200MS)
 
 
@@ -196,9 +197,9 @@ define FREE_ONLY
 [drives]
 #H = high power J130
 #### these are all 50v power
-H1: top right popper, duty(SOL_DUTY_75), time(TIME_100MS)
+H1: slide popper, duty(SOL_DUTY_75), time(TIME_100MS)
 H2: left subway enter, flash
-H3: lower right popper, duty(SOL_DUTY_75), time(TIME_100MS)
+H3: bowl popper, duty(SOL_DUTY_75), time(TIME_100MS)
 H4: Ball Release, ballserve, duty(SOL_DUTY_25), time(TIME_133MS)
 H5: left sling, duty(SOL_DUTY_100), time(TIME_33MS)
 H6: right sling, duty(SOL_DUTY_100), time(TIME_33MS)
@@ -219,22 +220,22 @@ L8: right popper fl, flash
 
 
 # G = J126 on Power Driver Board
-G1: bottom left fl, flash
+G1: kiss car fl, flash
 G2: right ramp fl, flash
 G3: left lamp fl, flash
-G4: seq gi 1, flash
-G5: holo push, flash
-G6: center hole fl, flash
-G7: updown ramp, duty(SOL_DUTY_50), time(TIME_66MS)
-G8: seq gi 2, flash
+G4: seq gi 1, nosearch
+G5: holo push, motor, nosearch
+G6: snackbar fl, flash
+G7: updown ramp up, duty(SOL_DUTY_50), time(TIME_66MS)
+G8: seq gi 2, nosearch
 
 
 # A = J122 pins 1-2-3-4
 #### these are all 20v power
 A1: start movie fl, flash
-A2: updown ramp fl, flash
-A3: creature motor, motor
-A4: creature lamp, motor
+A2: updown ramp down, duty(SOL_DUTY_50), time(TIME_66MS)
+A3: holo motor, motor, nosearch
+A4: holo lamp, nosearch
 
 # F = J902 on Fliptronic II
 #### these are all 50v power
@@ -248,12 +249,13 @@ F4: L.L. Flip Hold
 
 [templates]
 outhole: driver(outhole), sol=SOL_OUTHOLE, swno=SW_OUTHOLE, swevent=sw_outhole
-left sling: driver(sling), sw=SW_LEFTSLINGSHOT, sol=SOL_LEFT_SLING
-right sling: driver(sling), sw=SW_RIGHTSLINGSHOT, sol=SOL_RIGHT_SLING
+left sling: driver(sling), sw=SW_LEFT_SLINGSHOT, sol=SOL_LEFT_SLING
+right sling: driver(sling), sw=SW_RIGHT_SLINGSHOT, sol=SOL_RIGHT_SLING
 left jet: driver(jet), sw=SW_LEFTJET, sol=SOL_LEFT_JET
 right jet: driver(jet), sw=SW_RIGHTJET, sol=SOL_RIGHT_JET
 lower jet: driver(jet), sw=SW_CENTERJET, sol=SOL_CENTER_JET
-updown ramp: driver(duty), sol=SOL_UPDOWN_RAMP, ontime=TIME_300MS, duty_ontime=TIME_33MS, duty_offtime=TIME_16MS, timeout=60
+updown ramp up: driver(duty), sol=SOL_UPDOWN_RAMP_UP, ontime=TIME_300MS, duty_ontime=TIME_33MS, duty_offtime=TIME_16MS, timeout=60
+updown ramp down: driver(duty), sol=SOL_UPDOWN_RAMP_DOWN, ontime=TIME_300MS, duty_ontime=TIME_33MS, duty_offtime=TIME_16MS, timeout=60
 
 
 
@@ -267,6 +269,7 @@ updown ramp: driver(duty), sol=SOL_UPDOWN_RAMP, ontime=TIME_300MS, duty_ontime=T
 2: pf upper
 3: seq gi 2
 4: pf lower
+
 
 ##########################################################################
 # Tests
@@ -288,7 +291,8 @@ updown ramp: driver(duty), sol=SOL_UPDOWN_RAMP, ontime=TIME_300MS, duty_ontime=T
 ##########################################################################
 [containers]
 Trough: Ball Release, trough, init_max_count(3), Trough 3, Trough 2, Trough 1
-
+Slide Popper: slide popper, slide popper
+Bowl Popper: bowl popper, bowl popper
 
 
 
@@ -313,11 +317,18 @@ Trough: Ball Release, trough, init_max_count(3), Trough 3, Trough 2, Trough 1
 # Sound calls for well-known events
 ##########################################################################
 [system_sounds]
+#Add Coin: SND_COIN
+Tilt Warning: SPCH_FM_HEY
+Tilt: SPCH_FM_THATDOESIT
 
 ##########################################################################
 # Music calls for well-known events
 ##########################################################################
 [system_music]
+Start Ball: MUS_DEFAULT_AT_PLUNGER
+Ball In Play: MUS_MAIN
+End Game: MUS_MAIN4
+
 
 ##########################################################################
 # A list of all scores needed by the game rules.
@@ -326,25 +337,47 @@ Trough: Ball Release, trough, init_max_count(3), Trough 3, Trough 2, Trough 1
 ##########################################################################
 [scores]
 10:
+100:
 500:
+1K:
 10K:
 20K:
 25K:
 50K:
 100K:
-175K:
-195110:
 250K:
 1M:
+5M:
 10M:
+15M:
 20M:
+25M:
+30M:
+35M:
+40M:
+45M:
+50M:
+60M:
 
 
 ##########################################################################
 # Bit flags.
 ##########################################################################
 [flags]
+Multiball Lit:
+Multiball ball locked:
+Multiball Running:
+Admit One:
+MMenu Lit:
+xball lit:
 
+video1lit:
+video2lit:
+
+cola:
+hotdog:
+popcorn:
+icecream:
 
 
 
@@ -352,9 +385,12 @@ Trough: Ball Release, trough, init_max_count(3), Trough 3, Trough 2, Trough 1
 # Global flags.
 ##########################################################################
 [globalflags]
+ball on pf:
+skillshot lit:
+tempfl:
+video1:
+video2:
 
-#plunger ball:
-#fall running:
 
 
 ##########################################################################
@@ -367,11 +403,21 @@ Trough: Ball Release, trough, init_max_count(3), Trough 3, Trough 2, Trough 1
 
 
 
-
 #
 #MACHINE_PAGE page GAME_PAGED_OBJS page(MACHINE_PAGE),
 ##################################
+MB2 Start: page(MACHINE_PAGE), PRI_GAME_QUICK8, D_PAUSE+D_QUEUED
+MB3 Start: page(MACHINE_PAGE), PRI_GAME_QUICK8, D_PAUSE+D_QUEUED
+Lock2 lit: page(MACHINE_PAGE), runner, PRI_GAME_MODE7, D_QUEUED+D_TIMEOUT
+MB Running: page(MACHINE_PAGE), runner, PRI_GAME_MODE7, D_QUEUED+D_TIMEOUT
+MB Lit: page(MACHINE_PAGE), runner, PRI_GAME_MODE7, D_QUEUED+D_TIMEOUT
 
+Bowl letter: page(MACHINE_PAGE), PRI_GAME_QUICK8, D_PAUSE+D_QUEUED
+
+Award Kiss: page(MACHINE_PAGE), PRI_GAME_QUICK8, D_PAUSE+D_QUEUED
+
+Paid Made: page(MACHINE_PAGE), PRI_GAME_QUICK7, D_PAUSE+D_QUEUED
+Paid Letter: page(MACHINE_PAGE), PRI_GAME_QUICK8, D_QUEUED+D_TIMEOUT
 
 
 #
@@ -383,7 +429,25 @@ Trough: Ball Release, trough, init_max_count(3), Trough 3, Trough 2, Trough 1
 #
 #MACHINE3_PAGE page GAME3_OBJS page(MACHINE3_PAGE)
 ##############################
+Skill Made: page(MACHINE3_PAGE), PRI_GAME_QUICK8, D_PAUSE+D_QUEUED
+DCombo Coll: page(MACHINE3_PAGE), PRI_GAME_QUICK8, D_PAUSE+D_QUEUED
+DCombo Init: page(MACHINE3_PAGE), PRI_GAME_QUICK8, D_PAUSE+D_QUEUED
 
+MMenu Running: page(MACHINE3_PAGE), runner, PRI_GAME_MODE7, D_QUEUED+D_TIMEOUT
+
+BigMil Running: page(MACHINE3_PAGE), runner, PRI_GAME_MODE7, D_QUEUED+D_TIMEOUT
+BigMil Jackpot: page(MACHINE3_PAGE), PRI_GAME_QUICK8, D_PAUSE+D_QUEUED
+
+
+
+
+#MACHINE4_PAGE page GAME4_OBJS page(MACHINE4_PAGE)
+##############################
+
+
+#MACHINE5_PAGE page GAME5_OBJS page(MACHINE5_PAGE)
+##############################
+xball: page(MACHINE5_PAGE), PRI_GAME_QUICK8, D_PAUSE+D_QUEUED
 
 
 
@@ -406,6 +470,12 @@ Trough: Ball Release, trough, init_max_count(3), Trough 3, Trough 2, Trough 1
 # unit of 'allocation' for a lamp effect.
 ##########################################################################
 [lamplists]
+Playfield: PF:all
+Paid: paidp..paidd
+Kiss: kissk..kisss2
+CreatureBB: C..E2
+Film: filmf..filmm
+
 
 
 ##########################################################################
@@ -419,6 +489,7 @@ Trough: Ball Release, trough, init_max_count(3), Trough 3, Trough 2, Trough 1
 ##########################################################################
 [timers]
 
+
 ##########################################################################
 # The default high scores.  Use GC to indicate the grand champion.
 # The parameters are the initials followed by the score value.  Periods
@@ -426,4 +497,9 @@ Trough: Ball Release, trough, init_max_count(3), Trough 3, Trough 2, Trough 1
 # Commas _cannot_ be used for this purpose since they separate parameters.
 ##########################################################################
 [highscores]
+GC: AE, 500000000
+1: KAT, 400000000
+2: MYA, 350000000
+3: ELS, 300000000
+4: BAS, 250000000
 
